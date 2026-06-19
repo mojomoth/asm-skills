@@ -64,7 +64,9 @@
 ## 조회 페이지(파싱)
 - 공지 `myNotice/list.do` — 테이블(NO/제목/작성자/등록일), 행의 view 링크 `nttId`(또는 view.do?…). 상세 `myNotice/view.do?nttId=`.
 - 월간일정 `schedule/list.do` — 캘린더 + 주요일정 테이블.
-- 팀매칭 `myTeam/team.do` — 팀 테이블(팀명/팀장/팀원/멘토명/프로젝트/ICT분류). 연수생·멘토·Expert는 Notion(별도 MCP).
+- 팀매칭 `myTeam/team.do?menuNo=200093` — **전체 팀은 `<ul class="bbs-team"> > li`** 카드로 렌더(고정 표가 아님; 표는 본인 매칭 팀만). 각 li: 팀명 `strong.t a`(onclick `teamPageGo(unm,uno,tno)` 의 tno=teamId), 프로젝트 `.add-txt`, `ul.info>li` 의 팀장/팀원/멘토(`a.sui`), ICT `.bot .ict li span`.
+  - **검색은 서버사이드 GET** `?searchCnd=<코드>&searchWrd=<키워드>` (검색 인터페이스 버튼 `search('1')` → listFrm GET). searchCnd: ""=전체, 1=연수생명, 2=멘토명, 3=프로젝트명, 4=팀명. → `team.mjs` 가 `--searchType member|mentor|project|teamName` 로 매핑.
+- 연수생/멘토/Expert 명단 = Notion(공개, JS 렌더링). **MCP 없이** `roster.mjs` 가 페이지의 비공개 `POST /api/v3/queryCollection` 에서 collectionId/viewId/spaceId(응답 `collectionIds`·`recordMap.collection[id].value.value.space_id`)를 알아낸 뒤, 정규화된 loader 요청(`reducers.collection_group_results.limit` 크게)을 한 번 더 보내 전체 행을 수집. 행 값은 `recordMap.block[id].value.value.properties[propId]`, 컬럼명은 collection schema. (mentee 페이지=collection_view_page, mentor/expert=인라인 컬렉션이라 스크롤 필요. Notion 429 주의 — 백오프 재시도.)
 - 멘토링 목록 `mentoLec/list.do` — listFrm. 행 view 링크 `qustnrSn`. 상세 `mentoLec/view.do?qustnrSn=` (신청자/참여자 목록 포함 → 보고서 자동채움 소스).
 - 보고 목록 `mentoringReport/list.do` — frm. 상세 `mentoringReport/view.do?reportId=` (인정시간/지급액/사무국의견).
 - 회원정보 `myInfo/forUpdateMy.do` — 조회만(수정 미지원).

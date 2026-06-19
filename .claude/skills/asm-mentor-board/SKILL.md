@@ -1,10 +1,11 @@
 ---
 name: asm-mentor-board
 description: >-
-  AI·SW 마에스트로 조회 기능 묶음 — 공지사항, 월간일정, 팀매칭(+Notion 연수생/멘토/Expert 목록),
-  회원정보(조회 전용), 신청/접수(IT기기·자기주도학습·프로젝트 활동비 + 멘토 평가의견). "공지 확인",
-  "이번달 일정", "내 팀/팀원/멘토 목록", "연수생 명단", "활동비/평가의견", "회원정보" 요청에 사용한다.
-allowed-tools: Bash, Read, mcp__claude_ai_Notion__notion-fetch, mcp__claude_ai_Notion__notion-search
+  AI·SW 마에스트로 조회 기능 묶음 — 공지사항, 월간일정, 팀매칭(연수생/멘토/프로젝트/팀명 검색),
+  연수생·멘토·Expert 명단(Notion), 회원정보(조회 전용), 신청/접수(IT기기·자기주도학습·프로젝트 활동비 +
+  멘토 평가의견). "공지 확인", "이번달 일정", "내 팀/팀원/멘토 목록", "연수생/멘토 정보", "연수생 명단",
+  "활동비/평가의견", "회원정보" 요청에 사용한다.
+allowed-tools: Bash, Read
 ---
 
 # asm-mentor-board — 조회 묶음 (공지/일정/팀/회원/신청·접수)
@@ -22,13 +23,26 @@ asm notice-view  --region seoul|busan --id <nttId>     # 제목/작성자/등록
 asm schedule --region seoul|busan [--month 2026-06]    # 주요 월간 일정 목록
 ```
 
-## 팀매칭 (+ Notion)
+## 팀매칭
 ```
-asm team --region seoul|busan [--search 키워드]         # 팀명/팀장/팀원/멘토/프로젝트/ICT분류
+asm team --region seoul|busan [--searchType member|mentor|project|teamName] [--search 키워드]
 ```
-- 반환 `data.notion` 에 region별 연수생/멘토/Expert Notion URL이 들어있다.
-- 연수생·멘토·Expert 명단은 **Notion MCP** 로 읽는다: `notion-fetch`(해당 URL) →
-  데이터베이스이므로 페이지네이션/더보기를 따라 전체 행을 수집한다. 홈페이지 팀 정보와 교차 확인.
+- 검색조건(`--searchType`)으로 사이트 검색 인터페이스의 모든 조건을 지원한다 (서버사이드 검색):
+  `member`=연수생명, `mentor`=멘토명, `project`=프로젝트명, `teamName`=팀명. 생략 시 **전체**(모든 필드).
+- 반환 `data.teams[]`: `{no, teamName, teamId, leader, members, mentors, project, ictMajor, ictMinor}`
+  (전체 팀 대상 — 본인 매칭 팀만이 아니라 검색어에 맞는 팀 전부). `data.notion` 에 명단 Notion URL.
+- 예: `asm team --region busan --searchType member --search 안용수` → 안용수가 속한 팀(SMP500) 반환.
+
+## 연수생/멘토/Expert 명단 (Notion, JS 렌더링)
+```
+asm roster --region seoul|busan [--kind mentees|mentors|experts] [--search 키워드]
+```
+- 공개 Notion 명단을 **브라우저로 가져온다**(페이지의 queryCollection API를 가로채 전체 행을 한 번에 수집).
+  Notion MCP 불필요. 반환 `data.rows[]`(컬럼명 보존), `data.columns`, `data.count`/`data.totalCount`.
+- `--kind` 기본값 `mentees`(연수생). 멘토는 `mentors`, Expert는 `experts`.
+- **라우팅: "연수생 정보/명단 조회"는 `roster --kind mentees`, "멘토 정보/명단 조회"는 `roster --kind mentors`.**
+  특정 인물은 `--search 이름` 으로 필터. 팀 소속까지 필요하면 `team --searchType member --search 이름` 과 교차 확인.
+- 예: `asm roster --region busan --kind mentees --search 안용수` → 안용수 연수생 카드(이름/기술스택/거주지/연락처 등).
 
 ## 회원정보 (조회 전용)
 ```
