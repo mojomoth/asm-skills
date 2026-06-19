@@ -40,7 +40,8 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 | `recon` | seoul/busan | browser | `--area <a>` 또는 `--url <상대경로>` (구조 재파악) |
 | `notices-list` / `notice-view` | seoul/busan | http | `--page` / `--id <nttId>` / `--search` |
 | `schedule` | seoul/busan | http | `--month YYYY-MM` |
-| `team` | seoul/busan | http | `--search` (+ Notion은 board 스킬) |
+| `team` | seoul/busan | http | `--searchType member\|mentor\|project\|teamName` `--search` (전체 팀 검색) |
+| `roster` | seoul/busan | browser | `--kind mentees\|mentors\|experts` `--search` (Notion 명단, JS 렌더링) |
 | `member-info` | seoul/busan | http | (조회 전용) |
 | `mento-list` / `mento-view` | seoul/busan | http | `--mine` `--month YYYY-MM` `--search` `--searchType 1\|2\|3` / `--id <qustnrSn>` |
 | `mento-create` / `mento-update` / `mento-delete` | seoul/busan | browser | `--json` `--files a,b` `--preview` `--force` / `--id` |
