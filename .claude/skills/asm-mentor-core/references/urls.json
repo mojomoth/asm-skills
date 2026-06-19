@@ -1,0 +1,35 @@
+{
+  "_comment": "Paths are RELATIVE to a region base = origin + prefix (seoul:/sw, busan:/busan/sw). Full URL = origin + prefix + path. Verified against the documented MY PAGE map; re-confirm with `asm recon`.",
+  "login": "/member/user/forLogin.do?menuNo=200025",
+  "loginPost": "/member/user/toLogin.do",
+  "logout": "/member/user/actionLogout.do",
+  "probe": "/mypage/myNotice/list.do?menuNo=200038",
+  "notices": {
+    "list": "/mypage/myNotice/list.do?menuNo=200038",
+    "view": "/mypage/myNotice/view.do?menuNo=200038"
+  },
+  "team": "/mypage/myTeam/team.do?menuNo=200093",
+  "schedule": "/mypage/schedule/list.do?menuNo=200043",
+  "mento": {
+    "list": "/mypage/mentoLec/list.do?menuNo=200046",
+    "view": "/mypage/mentoLec/view.do?menuNo=200046",
+    "insert": "/mypage/mentoLec/forInsert.do?menuNo=200046"
+  },
+  "report": {
+    "list": "/mypage/mentoringReport/list.do?menuNo=200049",
+    "view": "/mypage/mentoringReport/view.do?menuNo=200049",
+    "insert": "/mypage/mentoringReport/forInsert.do?menuNo=200048"
+  },
+  "fund": {
+    "device": "/mypage/myFound/list.do?menuNo=200053",
+    "project": "/mypage/myFound/list.do?menuNo=200054",
+    "projectView": "/mypage/projectSpt/view.do?menuNo=200054"
+  },
+  "room": {
+    "list": "/mypage/officeMng/list.do?menuNo=200058",
+    "view": "/mypage/officeMng/view.do?menuNo=200058",
+    "rentList": "/mypage/itemRent/list.do?menuNo=200059",
+    "rentView": "/mypage/itemRent/view.do?menuNo=200059"
+  },
+  "member": "/mypage/myInfo/forUpdateMy.do?menuNo=200036"
+}

@@ -1,0 +1,100 @@
+{
+  "_comment": "Selector map captured via `asm recon` 2026-06-18. area -> { _default, seoul, busan }. Re-run recon and edit here when the site changes.",
+  "login": {
+    "_default": {
+      "username": "#username",
+      "password": "#password",
+      "submit": "button.btn-login",
+      "errorBanner": ".alert-danger, .error_msg, .msg_error, .txt_error"
+    }
+  },
+  "common": {
+    "_default": {
+      "loggedOutMarker": "#login_form, #username"
+    }
+  },
+  "mento": {
+    "_default": {
+      "form": "form#board",
+      "catFree": "#MRC010",
+      "catLecture": "#MRC020",
+      "title": "#qustnrSj",
+      "receiptBefore": "#receiptTypeLecture",
+      "receiptDirect": "#receiptTypeDirect",
+      "bgnDate": "#bgndeDate",
+      "bgnTime": "#bgndeTime",
+      "endDate": "#enddeDate",
+      "endTime": "#enddeTime",
+      "eventDate": "#eventDt",
+      "eventStime": "#eventStime",
+      "eventEtime": "#eventEtime",
+      "applyCnt": "#applyCnt",
+      "applySelect1": "#applyNewCnt1",
+      "applySelect2": "#applyNewCnt2",
+      "place": "#place",
+      "fileInput": "#file_1_1",
+      "bodyTextarea": "#qestnarCn",
+      "csrf": "input[name=csrfToken]",
+      "submitBtn": "a:has-text('등록'), button:has-text('등록')",
+      "deleteBtn": "a:has-text('삭제'), button:has-text('삭제')",
+      "editBtn": "a:has-text('수정'), button:has-text('수정')"
+    },
+    "busan": {
+      "methodOnline": "#progressMethodCd0",
+      "methodOffline": "#progressMethodCd1"
+    }
+  },
+  "report": {
+    "_default": {
+      "form": "form#board",
+      "regionSeoul": "#menteeRegionCd_0",
+      "regionBusan": "#menteeRegionCd_1",
+      "gubunRegular": "#state1_1",
+      "gubunFree": "#state1_2",
+      "gubunLecture": "#state1_3",
+      "progressDate": "#progressDt",
+      "teamInput": "#teamNmsInput",
+      "teamHidden": "input[name=teamNms]",
+      "place": "#progressPlace",
+      "attendanceCnt": "#attendanceCnt",
+      "attendanceInput": "#attendanceNmsInput",
+      "attendanceHidden": "input[name=attendanceNms]",
+      "nonAttendanceInput": "#nonAttendanceNmsInput",
+      "nonAttendanceHidden": "input[name=nonAttendanceNms]",
+      "startHour": "#progressStimeHour",
+      "startMin": "#progressStimeMin",
+      "endHour": "#progressEtimeHour",
+      "endMin": "#progressEtimeMin",
+      "exStartHour": "#exceptStimeHour",
+      "exStartMin": "#exceptStimeMin",
+      "exEndHour": "#exceptEtimeHour",
+      "exEndMin": "#exceptEtimeMin",
+      "exReason": "#exceptReason",
+      "subject": "#subject",
+      "nttCn": "#nttCn",
+      "mentoOpn": "#mentoOpn",
+      "etc": "#etc",
+      "fileInput": "#file_1_1",
+      "fileNameInput": "#upload-name_file_1_1",
+      "csrf": "#csrfToken",
+      "addButtons": "button:has-text('추가'), a:has-text('추가')",
+      "submitBtn": "button:has-text('저장'), a:has-text('저장')"
+    }
+  },
+  "room": {
+    "_default": {
+      "form": "form#frm",
+      "title": "#title",
+      "rentDate": "#rentDt",
+      "rentNum": "#rentNum",
+      "slotCheckbox": "input[name=time]",
+      "infoCn": "#infoCn",
+      "csrf": "#csrfToken",
+      "itemId": "#itemId",
+      "rentRangeStart": "#rentBgnde",
+      "rentRangeEnd": "#rentEndde",
+      "submitBtn": "#saveBtn",
+      "cancelBtn": "a[onclick*='mod('], button[onclick*='mod('], button:has-text('예약 취소'), a:has-text('예약 취소')"
+    }
+  }
+}

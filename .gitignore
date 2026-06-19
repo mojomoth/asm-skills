@@ -1,0 +1,16 @@
+# secrets & credentials
+.env
+.env.*
+!.env.example
+
+# node
+node_modules/
+
+# runtime data (sessions, recon artifacts, screenshots, dedup ledger)
+.agentdocs/asm/sessions/
+.agentdocs/asm/state/
+.agentdocs/asm/recon/
+.agentdocs/asm/artifacts/
+
+# OS
+.DS_Store

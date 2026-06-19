@@ -1,0 +1,3 @@
+{
+  "_comment": "Internal HTTP/AJAX endpoints reverse-engineered from recon HAR. area -> key -> { method, path (relative to region base), params, csrf, notes }. Empty until recon runs; commands fall back to the browser path when an endpoint is unmapped."
+}

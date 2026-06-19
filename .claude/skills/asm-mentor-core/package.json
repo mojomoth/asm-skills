@@ -1,0 +1,17 @@
+{
+  "name": "asm-mentor-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared engine for the asm-mentor-* skill suite: authenticated HTTP + Playwright automation of the AI·SW Maestro mentor MY PAGE (Seoul + Busan).",
+  "bin": {
+    "asm": "scripts/asm.mjs"
+  },
+  "scripts": {
+    "asm": "node scripts/asm.mjs"
+  },
+  "dependencies": {
+    "node-html-parser": "^6.1.13",
+    "playwright": "1.61.0"
+  }
+}
