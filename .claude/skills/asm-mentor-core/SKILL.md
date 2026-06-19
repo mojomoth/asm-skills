@@ -41,7 +41,7 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 | `notices-list` / `notice-view` | seoul/busan | http | `--page` / `--id <nttId>` / `--search` |
 | `schedule` | seoul/busan | http | `--month YYYY-MM` |
 | `team` | seoul/busan | http | `--searchType member\|mentor\|project\|teamName` `--search` (전체 팀 검색) |
-| `roster` | seoul/busan | browser | `--kind mentees\|mentors\|experts` `--search` (Notion 명단, JS 렌더링) |
+| `roster` | seoul/busan | browser | `--kind mentees\|mentors\|experts` `--search "이름1,이름2"` (Notion 명단, JS 렌더링; 여러 명은 쉼표로 한 번에 — throttle 방지) |
 | `member-info` | seoul/busan | http | (조회 전용) |
 | `mento-list` / `mento-view` | seoul/busan | http | `--mine` `--month YYYY-MM` `--search` `--searchType 1\|2\|3` / `--id <qustnrSn>` |
 | `mento-create` / `mento-update` / `mento-delete` | seoul/busan | browser | `--json` `--files a,b` `--preview` `--force` / `--id` |
