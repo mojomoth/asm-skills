@@ -30,13 +30,19 @@ export async function selectValue(page, selector, value) {
     await page.selectOption(selector, String(value), { timeout: 5000 });
     return true;
   } catch {
-    // fallback: set value + dispatch change (covers cascading selects whose options arrive late)
+    // fallback: match by option value OR visible label (case/space-insensitive), then dispatch change.
+    // Covers cascading selects whose options arrive late, and label/value mismatches
+    // (e.g. report 진행장소 options are code values like CD_25 with label "온라인(Webex)").
     return evalJson(page, (a) => {
       const el = document.querySelector(a.selector);
       if (!el) return false;
-      el.value = a.value;
+      const norm = (s) => String(s == null ? '' : s).trim().toLowerCase().replace(/\s+/g, '');
+      const want = norm(a.value);
+      const opt = [...el.options].find((o) => norm(o.value) === want || norm(o.text) === want)
+        || [...el.options].find((o) => norm(o.text).includes(want) && want.length > 1);
+      el.value = opt ? opt.value : a.value;
       el.dispatchEvent(new Event('change', { bubbles: true }));
-      return el.value === a.value;
+      return opt ? el.value === opt.value : el.value === a.value;
     }, { selector, value: String(value) });
   }
 }
@@ -108,12 +114,47 @@ export async function attachFiles(page, region, files, { nameInputPrefix } = {})
   }
 }
 
+// Check a radio/checkbox robustly. The board uses custom-styled radios that Playwright
+// considers "not visible", so .check() times out — fall back to a JS click that also
+// fires the inline onclick/onchange handlers (e.g. 멘토링대상 -> 진행장소 옵션 로딩).
+export async function checkRadio(page, selector) {
+  const loc = page.locator(selector).first();
+  if ((await loc.count()) === 0) return false;
+  try {
+    await loc.check({ force: true, timeout: 4000 });
+  } catch {
+    await evalJson(page, (s) => {
+      const el = document.querySelector(s);
+      if (!el) return false;
+      el.checked = true;
+      try { el.click(); } catch (e) {}
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }, selector);
+  }
+  return true;
+}
+
+// Click a submit button, auto-accepting confirm/alert dialogs. Returns the dialog
+// messages seen so callers can detect a success alert ("등록 되었습니다") even when the
+// post-submit navigation is an AJAX redirect that leaves the URL on the insert page.
 async function clickSubmit(page, selector) {
-  page.on('dialog', (d) => d.accept().catch(() => {}));
+  const dialogs = [];
+  const onDialog = (d) => { dialogs.push(d.message()); d.accept().catch(() => {}); };
+  page.on('dialog', onDialog);
   const nav = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null);
   await page.locator(selector).first().click();
   await nav;
   await page.waitForTimeout(500);
+  page.off('dialog', onDialog);
+  return { dialogs };
+}
+
+// A submit succeeded if it navigated off the insert form OR a confirmation alert fired.
+function submitSucceeded(finalUrl, dialogs) {
+  if (/list\.do|report\.do/.test(finalUrl) || !/forInsert|insert\.do/.test(finalUrl)) return true;
+  return (dialogs || []).some((m) => /등록|수정|저장|완료|되었습니다|성공/.test(String(m)) && !/하시겠습니까|필수|반드시|입력/.test(String(m)));
 }
 
 // ---- MENTO registration form ----
@@ -169,13 +210,12 @@ export async function fillMentoForm(page, region, payload, files, { preview, upd
     await page.screenshot({ path: shot, fullPage: true });
     return { filled: true, screenshot: shot, finalUrl: page.url() };
   }
-  await clickSubmit(page, S('submitBtn'));
+  const { dialogs } = await clickSubmit(page, S('submitBtn'));
   const finalUrl = page.url();
-  const okSubmit = /list\.do/.test(finalUrl) || !/forInsert|insert\.do/.test(finalUrl);
-  if (!okSubmit) {
+  if (!submitSucceeded(finalUrl, dialogs)) {
     const shot = artifact(`mento-${region}-error.png`);
     await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
-    throw new AsmError('WRITE_BLOCKED', '멘토링 등록 제출이 확인되지 않았습니다(검증 실패 가능).', { screenshot: shot, finalUrl });
+    throw new AsmError('WRITE_BLOCKED', '멘토링 등록 제출이 확인되지 않았습니다(검증 실패 가능).', { screenshot: shot, finalUrl, dialogs });
   }
   return { submitted: true, finalUrl };
 }
@@ -187,12 +227,12 @@ export async function fillReportForm(page, region, m, evidenceFiles, { preview }
   const S = (k) => sel('report', k);
   // 1. 멘토링 대상 -> progressPlace 옵션 로딩
   const busanMentee = /부산/.test(m.menteeTarget || '');
-  await page.locator(busanMentee ? S('regionBusan') : S('regionSeoul')).first().check().catch(() => {});
+  await checkRadio(page, busanMentee ? S('regionBusan') : S('regionSeoul'));
   await page.waitForTimeout(700);
   // 2. 구분
   const cat = m.category || '';
   const gubunSel = /정규/.test(cat) ? S('gubunRegular') : /특강/.test(cat) ? S('gubunLecture') : S('gubunFree');
-  await page.locator(gubunSel).first().check().catch(() => {});
+  await checkRadio(page, gubunSel);
   await page.waitForTimeout(200);
   // 3. 진행 날짜
   await setDateField(page, S('progressDate'), m.date);
@@ -244,13 +284,12 @@ export async function fillReportForm(page, region, m, evidenceFiles, { preview }
     await page.screenshot({ path: shot, fullPage: true });
     return { filled: true, screenshot: shot, finalUrl: page.url() };
   }
-  await clickSubmit(page, S('submitBtn'));
+  const { dialogs } = await clickSubmit(page, S('submitBtn'));
   const finalUrl = page.url();
-  const okSubmit = /list\.do|report\.do/.test(finalUrl) || !/forInsert|insert\.do/.test(finalUrl);
-  if (!okSubmit) {
+  if (!submitSucceeded(finalUrl, dialogs)) {
     const shot = artifact('report-error.png');
     await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
-    throw new AsmError('WRITE_BLOCKED', '보고서 제출이 확인되지 않았습니다(검증 실패 가능).', { screenshot: shot, finalUrl });
+    throw new AsmError('WRITE_BLOCKED', '보고서 제출이 확인되지 않았습니다(검증 실패 가능).', { screenshot: shot, finalUrl, dialogs });
   }
   return { submitted: true, finalUrl };
 }
