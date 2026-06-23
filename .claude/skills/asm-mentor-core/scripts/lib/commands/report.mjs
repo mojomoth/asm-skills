@@ -25,7 +25,7 @@ export async function list(ctx) {
   if (flags.view === 'approved') rel += '&searchType=approved'; // 승인내역; exact param confirmed via recon if needed
   if (flags.page) rel += `&pageIndex=${encodeURIComponent(flags.page)}`;
   if (flags.search) rel += `&searchCnd=${encodeURIComponent(flags.searchType || '1')}&searchWrd=${encodeURIComponent(flags.search)}`;
-  const { body } = await httpGet(REPORT_REGION, rel, { state });
+  const { body } = await httpGet(REPORT_REGION, rel, { state, area: 'report', key: 'list' });
   const root = parse(body);
   const table = findTable(root, ['진행']) || findTable(root, ['제목']) || root.querySelector('.board_list table, table.tstyle1');
   const items = rowsOf(table).map((r) => {
@@ -144,8 +144,8 @@ export async function create(ctx) {
 
   // 4. fill + submit (always seoul board)
   return withSession(REPORT_REGION, async ({ page }) => {
-    await gotoGuarded(page, REPORT_REGION, regionUrl(REPORT_REGION, url('report', 'insert')), state);
-    const res = await fillReportForm(page, REPORT_REGION, model, evidence, { preview });
+    await gotoGuarded(page, REPORT_REGION, regionUrl(REPORT_REGION, url('report', 'insert')), state, { area: 'report', key: 'insert' });
+    const res = await fillReportForm(page, REPORT_REGION, model, evidence, { preview, heal: ctx.heal });
     if (preview) return { preview: true, model, evidence, ...res };
     // record ledger
     if (key) { ledger[key] = { reportId: extractReportId(res.finalUrl), submittedAt: new Date().toISOString() }; saveLedger(ledger); }

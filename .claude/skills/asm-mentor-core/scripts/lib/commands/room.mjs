@@ -1,5 +1,6 @@
 // room.mjs — 회의실 예약. availability (live DOM, slots free/taken) + reserve + cancel.
 import { url, sel } from '../maps.mjs';
+import { resolveSel } from '../resolve.mjs';
 import { withSession, gotoGuarded, regionUrl } from '../session.mjs';
 import { evalJson } from '../dom.mjs';
 import { artifact, setText } from '../widgets.mjs';
@@ -114,7 +115,7 @@ export async function reserve(ctx) {
       if (!hit) throw new AsmError('VALIDATION', `회의실 '${roomName}' 을 찾지 못했습니다.`, { rooms: rooms.map((r) => r.name) });
       id = hit.itemId;
     }
-    await gotoGuarded(page, region, viewUrl(region, date, id), state);
+    await gotoGuarded(page, region, viewUrl(region, date, id), state, { area: 'room', key: 'view' });
     await waitSlots(page);
     const slots = await readSlots(page);
     // desired contiguous slots in [startTime, endTime)
@@ -126,7 +127,7 @@ export async function reserve(ctx) {
       wanted.push(slot);
     }
     // fill fields
-    await setText(page, sel('room', 'title'), title);
+    await setText(page, await resolveSel(page, 'room', 'title', region, ctx.heal), title);
     if (headcount != null) await setText(page, sel('room', 'rentNum'), headcount);
     if (content) await setText(page, sel('room', 'infoCn'), content);
     // check each slot checkbox
@@ -142,7 +143,7 @@ export async function reserve(ctx) {
     }
     page.on('dialog', (d) => d.accept().catch(() => {}));
     const nav = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null);
-    await page.locator(sel('room', 'submitBtn')).first().click();
+    await page.locator(await resolveSel(page, 'room', 'submitBtn', region, ctx.heal)).first().click();
     await nav;
     const finalUrl = page.url();
     if (/view\.do/.test(finalUrl) && /itemId/.test(finalUrl)) {
@@ -159,8 +160,8 @@ export async function cancel(ctx) {
   const rentId = flags.rentId || flags.id;
   if (!rentId) throw new AsmError('VALIDATION', 'room-cancel requires --rentId <id>');
   return withSession(region, async ({ page }) => {
-    await gotoGuarded(page, region, `${regionUrl(region, url('room', 'rentView'))}&rentId=${encodeURIComponent(rentId)}`, state);
-    const cancelSel = sel('room', 'cancelBtn');
+    await gotoGuarded(page, region, `${regionUrl(region, url('room', 'rentView'))}&rentId=${encodeURIComponent(rentId)}`, state, { area: 'room', key: 'rentView' });
+    const cancelSel = await resolveSel(page, 'room', 'cancelBtn', region, ctx.heal);
     if ((await page.locator(cancelSel).count()) === 0) {
       throw new AsmError('SELECTOR_NOT_FOUND', '예약취소 버튼을 찾지 못했습니다.', { hint: `recon: --url "${url('room', 'rentView')}&rentId=${rentId}"` });
     }

@@ -1,8 +1,13 @@
 // env.mjs — project-root resolution, .env parsing, region config, path constants.
 // Credentials are read here and never written to disk or logs (see io.mjs redactor).
-import { readFileSync, existsSync } from 'node:fs';
+//
+// STATE BASE (self-heal / plugin-safe): runtime data (sessions, state/overrides,
+// recon, artifacts) lives under a resolved WRITABLE base, not blindly under the
+// skill dir — so the suite also works when installed as a read-only plugin.
+import { readFileSync, existsSync, mkdirSync, writeFileSync, unlinkSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
+import { homedir } from 'node:os';
 
 export function findProjectRoot(startDir) {
   let dir = startDir || dirname(fileURLToPath(import.meta.url));
@@ -17,10 +22,57 @@ export function findProjectRoot(startDir) {
 }
 
 export const PROJECT_ROOT = findProjectRoot();
-export const SESSIONS_DIR = join(PROJECT_ROOT, '.agentdocs/asm/sessions');
-export const STATE_DIR = join(PROJECT_ROOT, '.agentdocs/asm/state');
-export const RECON_DIR = join(PROJECT_ROOT, '.agentdocs/asm/recon');
-export const ARTIFACTS_DIR = join(PROJECT_ROOT, '.agentdocs/asm/artifacts');
+
+// Is PROJECT_ROOT a genuine project (dev repo) rather than a plugin install?
+// A plugin lives under a ".../plugins/..." path; a real repo has a .env or a
+// .claude dir that is NOT under a plugins/ segment.
+function isGenuineProject(root) {
+  const underPlugins = root.split(sep).includes('plugins');
+  if (existsSync(join(root, '.env'))) return true;
+  if (existsSync(join(root, '.claude')) && !underPlugins) return true;
+  return false;
+}
+
+// Probe a directory for writability exactly once per candidate (mkdir + write+unlink).
+function isWritable(dir) {
+  try {
+    mkdirSync(dir, { recursive: true });
+    const probe = join(dir, `.wprobe-${process.pid}`);
+    writeFileSync(probe, 'x');
+    unlinkSync(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let _stateBase = null;
+// Resolve the writable runtime base. Precedence:
+//   1) ASM_STATE_DIR                              (explicit; cron/headless/sandbox)
+//   2) PROJECT_ROOT/.agentdocs/asm                (dev repo, when genuine + writable)
+//   3) ${XDG_STATE_HOME:-~/.local/state}/asm-mentor   (guaranteed-writable home fallback)
+export function resolveStateBase() {
+  if (_stateBase) return _stateBase;
+  const candidates = [];
+  if (process.env.ASM_STATE_DIR) candidates.push(resolve(process.env.ASM_STATE_DIR));
+  if (isGenuineProject(PROJECT_ROOT)) candidates.push(join(PROJECT_ROOT, '.agentdocs', 'asm'));
+  const xdg = process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state');
+  candidates.push(join(xdg, 'asm-mentor'));
+  for (const c of candidates) {
+    if (isWritable(c)) { _stateBase = c; return _stateBase; }
+  }
+  // last resort: the first candidate even if the probe failed (callers handle EACCES)
+  _stateBase = candidates[0];
+  return _stateBase;
+}
+
+const STATE_BASE = resolveStateBase();
+export const SESSIONS_DIR = join(STATE_BASE, 'sessions');
+export const STATE_DIR = join(STATE_BASE, 'state');
+export const RECON_DIR = join(STATE_BASE, 'recon');
+export const ARTIFACTS_DIR = join(STATE_BASE, 'artifacts');
+// Heal store lives under STATE_DIR (already gitignored in the dev repo).
+export const HEAL_DIR = join(STATE_DIR, 'heal');
 
 function parseEnv(text) {
   const out = {};
@@ -33,6 +85,24 @@ function parseEnv(text) {
     let v = t.slice(eq + 1).trim();
     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
     out[k] = v;
+  }
+  return out;
+}
+
+function readEnvFile(path) {
+  return existsSync(path) ? parseEnv(readFileSync(path, 'utf8')) : {};
+}
+
+// Layer the relevant ASM_* config from (lowest) ~/.config/asm-mentor/.env -> repo .env
+// -> (highest) process.env. Plugin/cron deployments can supply creds purely via
+// real environment variables, with no repo .env present.
+function layeredEnv() {
+  const userCfg = readEnvFile(join(homedir(), '.config', 'asm-mentor', '.env'));
+  const repo = readEnvFile(join(PROJECT_ROOT, '.env'));
+  const KEYS = ['ASM_HOMEPAGE_ID', 'ASM_HOMEPAGE_PW', 'ASM_SEOUL_HOMEPAGE_URL', 'ASM_BUSAN_HOMEPAGE_URL'];
+  const out = { ...userCfg, ...repo };
+  for (const k of KEYS) {
+    if (process.env[k] != null && process.env[k] !== '') out[k] = process.env[k];
   }
   return out;
 }
@@ -54,11 +124,11 @@ function normalizeOrigin(rawUrl, fallback) {
 let _cfg = null;
 export function loadConfig() {
   if (_cfg) return _cfg;
-  const envPath = join(PROJECT_ROOT, '.env');
-  const env = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
+  const env = layeredEnv();
   const origin = normalizeOrigin(env.ASM_SEOUL_HOMEPAGE_URL, 'https://www.swmaestro.ai');
   _cfg = {
     projectRoot: PROJECT_ROOT,
+    stateBase: STATE_BASE,
     creds: { id: env.ASM_HOMEPAGE_ID || '', pw: env.ASM_HOMEPAGE_PW || '' },
     regions: {
       seoul: { origin, prefix: '/sw' },

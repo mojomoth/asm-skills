@@ -1,0 +1,7 @@
+{
+  "_comment": "Read-path list-table descriptors for TIER-2 read-structure heals (column/table drift). NOT consulted by current code — reads use parse.mjs keyword heuristics (findTable/strongPairs), so this file is descriptive scaffolding for future autonomous read healing and for Claude to consult on a HEAL_NEEDED. area.key -> { headerKeywords[]: words that identify the right <table>, columns{name->index}, containerSel }.",
+  "notices.list": { "headerKeywords": ["제목", "작성자"], "columns": { "title": 1, "author": -2, "date": -1 }, "containerSel": ".board_list, table" },
+  "mento.list": { "headerKeywords": ["제목", "진행날짜"], "columns": { "title": 1, "receiptPeriod": 2, "eventDate": 3, "capacity": 4 }, "containerSel": "table" },
+  "report.list": { "headerKeywords": ["진행"], "columns": {}, "containerSel": ".board_list table, table.tstyle1" },
+  "schedule.list": { "headerKeywords": ["제목"], "columns": {}, "containerSel": "table" }
+}

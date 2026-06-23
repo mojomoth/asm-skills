@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { ARTIFACTS_DIR, PROJECT_ROOT } from './env.mjs';
 import { sel } from './maps.mjs';
+import { resolveSel } from './resolve.mjs';
 import { evalJson } from './dom.mjs';
 import { AsmError, log } from './io.mjs';
 
@@ -161,12 +162,13 @@ function submitSucceeded(finalUrl, dialogs) {
 // payload: { category:'자유멘토링'|'멘토특강', method?:'온라인'|'오프라인'(busan),
 //   title, receiptType:'before'|'direct', bgnDate,bgnTime, endDate?,endTime?,
 //   eventDate, startTime, endTime, capacity, place, body? }
-export async function fillMentoForm(page, region, payload, files, { preview, update } = {}) {
+export async function fillMentoForm(page, region, payload, files, { preview, update, heal = {} } = {}) {
   const S = (k) => sel('mento', k, region);
+  const R = (k) => resolveSel(page, 'mento', k, region, heal); // heal-aware (load-bearing keys)
   // 1. 강의구분 — custom-styled radios (real input hidden) -> use robust JS-click fallback
   if (payload.category) {
     const isLecture = /특강/.test(payload.category);
-    await checkRadio(page, isLecture ? S('catLecture') : S('catFree'));
+    await checkRadio(page, await R(isLecture ? 'catLecture' : 'catFree'));
     await page.waitForTimeout(300);
   }
   // 2. (부산) 진행방식 -> place 옵션 재로딩
@@ -176,7 +178,7 @@ export async function fillMentoForm(page, region, payload, files, { preview, upd
     await page.waitForTimeout(600);
   }
   // 3. 모집명
-  await setText(page, S('title'), payload.title);
+  await setText(page, await R('title'), payload.title);
   // 4. 접수기간
   if (payload.receiptType === 'direct') {
     await page.locator(S('receiptDirect')).first().check().catch(() => {});
@@ -190,7 +192,7 @@ export async function fillMentoForm(page, region, payload, files, { preview, upd
     if (payload.bgnTime) await selectValue(page, S('bgnTime'), payload.bgnTime);
   }
   // 5. 강의날짜
-  await setDateField(page, S('eventDate'), payload.eventDate);
+  await setDateField(page, await R('eventDate'), payload.eventDate);
   if (payload.startTime) await selectValue(page, S('eventStime'), payload.startTime);
   if (payload.endTime) await selectValue(page, S('eventEtime'), payload.endTime);
   // 6. 수강인원
@@ -200,7 +202,7 @@ export async function fillMentoForm(page, region, payload, files, { preview, upd
     await evalJson(page, (a) => { const el = document.querySelector(a.selq); if (el) { el.value = a.v; el.dispatchEvent(new Event('change', { bubbles: true })); } return true; }, { selq: S('applyCnt'), v: String(payload.capacity) });
   }
   // 7. 진행장소
-  if (payload.place) await selectValue(page, S('place'), payload.place);
+  if (payload.place) await selectValue(page, await R('place'), payload.place);
   // 8. 첨부
   if (files && files.length) await attachFiles(page, region, files);
   // 9. 본문
@@ -211,7 +213,7 @@ export async function fillMentoForm(page, region, payload, files, { preview, upd
     await page.screenshot({ path: shot, fullPage: true });
     return { filled: true, screenshot: shot, finalUrl: page.url() };
   }
-  const { dialogs } = await clickSubmit(page, S('submitBtn'));
+  const { dialogs } = await clickSubmit(page, await R('submitBtn'));
   const finalUrl = page.url();
   if (!submitSucceeded(finalUrl, dialogs)) {
     const shot = artifact(`mento-${region}-error.png`);
@@ -224,11 +226,12 @@ export async function fillMentoForm(page, region, payload, files, { preview, upd
 // ---- REPORT form ----
 // model: { menteeTarget, category, date, teamName?, place, attendees[], startTime, endTime,
 //   excludeStart?, excludeEnd?, excludeReason?, subject, progress, mentorOpinion?, etc?, absentees[] }
-export async function fillReportForm(page, region, m, evidenceFiles, { preview } = {}) {
+export async function fillReportForm(page, region, m, evidenceFiles, { preview, heal = {} } = {}) {
   const S = (k) => sel('report', k);
+  const R = (k) => resolveSel(page, 'report', k, undefined, heal); // heal-aware (load-bearing keys)
   // 1. 멘토링 대상 -> progressPlace 옵션 로딩
   const busanMentee = /부산/.test(m.menteeTarget || '');
-  await checkRadio(page, busanMentee ? S('regionBusan') : S('regionSeoul'));
+  await checkRadio(page, await R(busanMentee ? 'regionBusan' : 'regionSeoul'));
   await page.waitForTimeout(700);
   // 2. 구분
   const cat = m.category || '';
@@ -244,7 +247,7 @@ export async function fillReportForm(page, region, m, evidenceFiles, { preview }
     await page.waitForTimeout(200);
   }
   // 5. 진행 장소
-  if (m.place) await selectValue(page, S('place'), m.place);
+  if (m.place) await selectValue(page, await R('place'), m.place);
   // 6. 참여 연수생 이름 (수는 자동)
   for (const name of m.attendees || []) {
     await setText(page, S('attendanceInput'), name);
@@ -264,7 +267,7 @@ export async function fillReportForm(page, region, m, evidenceFiles, { preview }
     if (m.excludeReason) await setText(page, S('exReason'), m.excludeReason);
   }
   // 9. 개요
-  await setText(page, S('subject'), m.subject);
+  await setText(page, await R('subject'), m.subject);
   await setText(page, S('nttCn'), m.progress);
   if (m.mentorOpinion) await setText(page, S('mentoOpn'), m.mentorOpinion);
   if (m.etc) await setText(page, S('etc'), m.etc);
@@ -285,7 +288,7 @@ export async function fillReportForm(page, region, m, evidenceFiles, { preview }
     await page.screenshot({ path: shot, fullPage: true });
     return { filled: true, screenshot: shot, finalUrl: page.url() };
   }
-  const { dialogs } = await clickSubmit(page, S('submitBtn'));
+  const { dialogs } = await clickSubmit(page, await R('submitBtn'));
   const finalUrl = page.url();
   if (!submitSucceeded(finalUrl, dialogs)) {
     const shot = artifact('report-error.png');

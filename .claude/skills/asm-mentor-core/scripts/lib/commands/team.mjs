@@ -97,7 +97,7 @@ export async function team(ctx) {
   if (keyword) {
     rel += `&searchCnd=${encodeURIComponent(cnd)}&searchWrd=${encodeURIComponent(keyword)}`;
   }
-  const { body } = await httpGet(region, rel, { state });
+  const { body } = await httpGet(region, rel, { state, area: 'team', key: null });
   const root = parse(body);
 
   // bbs-team 컨테이너가 있으면(검색결과 0건이어도 ul은 존재) 그걸 신뢰, 없으면 표로 폴백.

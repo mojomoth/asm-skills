@@ -7,7 +7,7 @@ export async function list(ctx) {
   const { region, state, flags } = ctx;
   let rel = url('schedule');
   if (flags.month) rel += `&searchYm=${encodeURIComponent(flags.month.replace('-', ''))}`;
-  const { body } = await httpGet(region, rel, { state });
+  const { body } = await httpGet(region, rel, { state, area: 'schedule', key: null });
   const root = parse(body);
   // The schedule list table (date/제목) — pick the table that is NOT the team widget or calendar.
   let events = [];
