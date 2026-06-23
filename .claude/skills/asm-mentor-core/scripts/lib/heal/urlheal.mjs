@@ -24,8 +24,20 @@ function doFileOf(path) {
 function originOf(region) { try { return new URL(regionBase(region)).origin; } catch { return ''; } }
 function prefixOf(region) { try { return new URL(regionBase(region)).pathname.replace(/\/$/, ''); } catch { return ''; } }
 
+// Pull the real navigation URL out of an anchor: a real href, else the quoted path inside
+// an onclick (location.href='...' / location.replace / window.open / any '...do...').
+// eGov MY PAGE menus very commonly navigate via onclick with no real href.
+export function navUrlFrom(href, onclick) {
+  if (href && href !== '#' && !/^javascript:/i.test(href)) return href;
+  const oc = String(onclick || '');
+  const m = oc.match(/(?:location\.href|location\.replace|window\.open)\s*\(?\s*['"]([^'"]+)['"]/);
+  if (m) return m[1];
+  const m2 = oc.match(/['"]([^'"]*\.do[^'"]*)['"]/);
+  return m2 ? m2[1] : null;
+}
+
 // Absolute or root-relative href -> region-relative path (strip origin + region prefix).
-function toRelative(region, href) {
+export function toRelative(region, href) {
   if (!href) return null;
   try {
     const abs = new URL(href, originOf(region) + '/');
@@ -37,42 +49,52 @@ function toRelative(region, href) {
   } catch { return null; }
 }
 
-function anchorsFromHtml(html) {
+export function anchorsFromHtml(html) {
   const root = parse(html);
   const out = [];
   for (const a of root.querySelectorAll('a')) {
-    const href = a.getAttribute('href') || '';
-    const onclick = a.getAttribute('onclick') || '';
-    const m = menuNoOf(href) || menuNoOf(onclick);
-    if (m) out.push({ menuNo: m, href: href || onclick, text: (a.text || '').trim().slice(0, 40) });
+    const nav = navUrlFrom(a.getAttribute('href') || '', a.getAttribute('onclick') || '');
+    const m = nav && menuNoOf(nav);
+    if (m) out.push({ menuNo: m, href: nav, text: (a.text || '').trim().slice(0, 40) });
   }
   return out;
 }
 
 async function anchorsFromPage(page) {
   return (await evalJson(page, () => {
+    const navUrlFrom = (href, onclick) => {
+      if (href && href !== '#' && !/^javascript:/i.test(href)) return href;
+      const oc = String(onclick || '');
+      const m = oc.match(/(?:location\.href|location\.replace|window\.open)\s*\(?\s*['"]([^'"]+)['"]/);
+      if (m) return m[1];
+      const m2 = oc.match(/['"]([^'"]*\.do[^'"]*)['"]/);
+      return m2 ? m2[1] : null;
+    };
     const out = [];
     for (const a of document.querySelectorAll('a')) {
-      const href = a.getAttribute('href') || '';
-      const onclick = a.getAttribute('onclick') || '';
-      const m = (href + ' ' + onclick).match(/[?&]menuNo=(\d+)/);
-      if (m) out.push({ menuNo: m[1], href: href || onclick, text: (a.innerText || a.textContent || '').trim().slice(0, 40) });
+      const nav = navUrlFrom(a.getAttribute('href') || '', a.getAttribute('onclick') || '');
+      const m = nav && nav.match(/[?&]menuNo=(\d+)/);
+      if (m) out.push({ menuNo: m[1], href: nav, text: (a.innerText || a.textContent || '').trim().slice(0, 40) });
     }
     return out;
   })) || [];
 }
 
 // Pick the best candidate path for the expected menuNo among crawled anchors.
-function pickCandidate(region, anchors, expectMenuNo, expectDoFile) {
+// The .do filename gate runs even for a SINGLE candidate: one menuNo covers list/view/
+// forInsert for the same menu, but the nav usually exposes only the list anchor — so a
+// single non-matching .do (e.g. list.do while healing forInsert.do) must NOT auto-persist;
+// it drops below AUTO_URL_CONF and escalates to Tier-2.
+export function pickCandidate(region, anchors, expectMenuNo, expectDoFile) {
   const matches = anchors.filter((a) => a.menuNo === String(expectMenuNo));
   const paths = [...new Set(matches.map((a) => toRelative(region, a.href)).filter(Boolean))];
   if (!paths.length) return null;
-  if (paths.length === 1) return { path: paths[0], confidence: 0.9 };
-  // multiple distinct paths share this menuNo -> tie-break by the old .do filename
   if (expectDoFile) {
     const byDo = paths.find((p) => doFileOf(p) === expectDoFile);
-    if (byDo) return { path: byDo, confidence: 0.85 };
+    if (byDo) return { path: byDo, confidence: paths.length === 1 ? 0.9 : 0.85 };
+    return { path: paths[0], confidence: 0.7 }; // doFile known but no path matches it -> escalate
   }
+  if (paths.length === 1) return { path: paths[0], confidence: 0.9 };
   return { path: paths[0], confidence: 0.7 }; // ambiguous -> below auto threshold
 }
 

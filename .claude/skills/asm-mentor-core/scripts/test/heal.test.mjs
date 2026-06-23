@@ -15,6 +15,7 @@ const { synthesizeSelector } = await import('../lib/heal/validate.mjs');
 const { sel, selOpt, url, desc, setOverride, reloadMerged, descriptorKeys } = await import('../lib/maps.mjs');
 const { scrubCandidates } = await import('../lib/heal/index.mjs');
 const store = await import('../lib/heal/store.mjs');
+const { navUrlFrom, anchorsFromHtml, pickCandidate, toRelative } = await import('../lib/heal/urlheal.mjs');
 
 // ---- representative fixtures (trimmed from real recon dumps; new format w/ form+value) ----
 const MENTO = {
@@ -146,6 +147,43 @@ test('store: ledger cap + cooldown gate re-heals', () => {
   assert.equal(store.ledgerBlocked('seoul', 'mento', 'title').reason, 'cooldown');
   store.ledgerClear('seoul', 'mento', 'title');
   assert.equal(store.ledgerBlocked('seoul', 'mento', 'title').blocked, false);
+});
+
+test('urlheal navUrlFrom: extracts the real path from onclick navigation', () => {
+  assert.equal(navUrlFrom('', "location.href='/sw/mypage/mentoLec/list.do?menuNo=200046'"), '/sw/mypage/mentoLec/list.do?menuNo=200046');
+  assert.equal(navUrlFrom('/real.do?menuNo=1', "x()"), '/real.do?menuNo=1');         // real href wins
+  assert.equal(navUrlFrom('#', "fn_go('/x.do?menuNo=2')"), '/x.do?menuNo=2');        // generic .do fallback
+  assert.equal(navUrlFrom('#', 'doNothing()'), null);                                // no url -> null
+  assert.equal(navUrlFrom('javascript:void(0)', "location.replace('/y.do?menuNo=3')"), '/y.do?menuNo=3');
+});
+
+test('urlheal anchorsFromHtml: onclick-only nav anchor yields a clean path, not raw JS', () => {
+  const anchors = anchorsFromHtml(`<ul><li><a onclick="location.href='/sw/mypage/mentoLec/list.do?menuNo=200046'">멘토링</a></li>
+    <li><a href="/sw/mypage/myNotice/list.do?menuNo=200038">공지</a></li>
+    <li><a onclick="alert('x')">none</a></li></ul>`);
+  assert.equal(anchors.length, 2);
+  const m = anchors.find((a) => a.menuNo === '200046');
+  assert.equal(m.href, '/sw/mypage/mentoLec/list.do?menuNo=200046');
+  assert.ok(!m.href.includes('location.href'), 'must not store raw onclick JS');
+});
+
+test('urlheal pickCandidate: doFile gate applies even to a single candidate (insert must not heal to list)', () => {
+  const navListOnly = [{ menuNo: '200046', href: '/sw/mypage/mentoLec/list.do?menuNo=200046' }];
+  // healing the INSERT url (forInsert.do) but nav exposes only list.do -> below auto (0.8) -> escalate
+  const insert = pickCandidate('seoul', navListOnly, '200046', 'forinsert.do');
+  assert.ok(insert.confidence < 0.8, `single non-matching .do must escalate, got ${insert.confidence}`);
+  // healing the LIST url -> doFile matches -> auto
+  const list = pickCandidate('seoul', navListOnly, '200046', 'list.do');
+  assert.equal(list.path, '/mypage/mentoLec/list.do?menuNo=200046');
+  assert.ok(list.confidence >= 0.8);
+  // no expectDoFile, single path -> auto
+  assert.ok(pickCandidate('seoul', navListOnly, '200046', null).confidence >= 0.8);
+});
+
+test('urlheal toRelative: strips origin + region prefix (seoul /sw, busan /busan/sw)', () => {
+  assert.equal(toRelative('seoul', '/sw/mypage/x.do?menuNo=1'), '/mypage/x.do?menuNo=1');
+  assert.equal(toRelative('busan', '/busan/sw/mypage/x.do?menuNo=1'), '/mypage/x.do?menuNo=1');
+  assert.equal(toRelative('seoul', 'https://www.swmaestro.ai/sw/mypage/x.do'), '/mypage/x.do');
 });
 
 test('urls: menuNo preserved across an override (descriptor merge keeps the rest)', () => {

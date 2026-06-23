@@ -28,8 +28,9 @@ export const PROJECT_ROOT = findProjectRoot();
 // .claude dir that is NOT under a plugins/ segment.
 function isGenuineProject(root) {
   const underPlugins = root.split(sep).includes('plugins');
+  if (underPlugins) return false; // a plugin install is never the dev-repo state base
   if (existsSync(join(root, '.env'))) return true;
-  if (existsSync(join(root, '.claude')) && !underPlugins) return true;
+  if (existsSync(join(root, '.claude'))) return true;
   return false;
 }
 

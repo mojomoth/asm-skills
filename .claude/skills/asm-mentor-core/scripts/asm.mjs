@@ -110,7 +110,8 @@ async function runWithHeal(command, ctx) {
     const e = err && err.code === 'URL_CHANGED' ? err : null;
     if (e && ctx.heal.autoHeal && RETRYABLE.has(command) && e.extra?.area) {
       const { healUrl } = await import('./lib/heal/urlheal.mjs');
-      await healUrl({ region: e.extra.region || ctx.region, area: e.extra.area, key: e.extra.key, state: ctx.state });
+      const r = await healUrl({ region: e.extra.region || ctx.region, area: e.extra.area, key: e.extra.key, state: ctx.state });
+      if (Array.isArray(ctx.state.healed)) ctx.state.healed.push({ area: e.extra.area, key: e.extra.key, kind: 'url', old: r.old, new: r.path, confidence: r.confidence });
       return route(command, ctx); // url() now resolves the healed path
     }
     throw err;

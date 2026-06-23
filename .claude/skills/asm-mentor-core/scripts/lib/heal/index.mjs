@@ -23,7 +23,7 @@ function scrubField(f) {
   return { tag: f.tag, type: f.type || null, name: f.name || null, id: f.id || null, form: f.form || null, required: f.required || null, label: trunc(f.label, 40) };
 }
 function scrubButton(b) {
-  return { tag: b.tag, text: trunc(b.text, 30), onclick: b.onclick || null };
+  return { tag: b.tag, text: trunc(b.text, 30), onclick: trunc(b.onclick, 60) };
 }
 // Emitted candidate list: structural facets only (drop option text/labels that could carry mentee PII).
 function scrubCandidates(ranked, isField, n = 4) {
@@ -118,9 +118,6 @@ export async function healSelector(ctx, { area, key, region, page, root }) {
   const decision = decide(ranked);
   const reconRef = saveDumpArtifact(region, area, key, dump);
 
-  // Count the attempt (caps repeated dumps of a key that keeps failing).
-  ledgerBump(region, area, key);
-
   const css = decision.top ? synthesizeSelector(decision.top.field, dsc) : null;
   const autoHeal = ctx.autoHeal !== false;
   const critical = dsc.criticality === 'high';
@@ -139,6 +136,9 @@ export async function healSelector(ctx, { area, key, region, page, root }) {
   }
 
   // Escalate: criticality, low confidence/margin, validation failure, or auto-heal off.
+  // Count the attempt ONLY on escalation (cap+cooldown throttle a key that keeps FAILING —
+  // a successful heal persists an override and never re-triggers, so it must not be counted).
+  ledgerBump(region, area, key);
   const reason = !autoHeal ? 'auto-heal-off' : critical ? 'criticality-high' : decision.action !== 'auto' ? 'low-confidence' : 'validation-failed';
   throw buildHealNeeded({ area, key, region, dsc, oldCss, ranked, isField, reason, decision, reconRef });
 }

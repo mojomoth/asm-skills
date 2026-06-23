@@ -35,6 +35,17 @@ export function menuNoOf(urlStr) {
   return m ? m[1] : null;
 }
 
+// Re-attach query params present in the original URL but missing from the healed path
+// (the nav-crawled path carries only menuNo, not item-scoped params like sdate/itemId/rentId).
+function mergeQuery(healedUrl, origUrl) {
+  try {
+    const h = new URL(healedUrl);
+    const o = new URL(origUrl);
+    for (const [k, v] of o.searchParams) if (!h.searchParams.has(k)) h.searchParams.set(k, v);
+    return h.toString();
+  } catch { return healedUrl; }
+}
+
 export async function hasLoginForm(page) {
   try {
     return (await page.locator(sel('common', 'loggedOutMarker')).count()) > 0;
@@ -150,7 +161,7 @@ export async function gotoGuarded(page, region, fullUrl, state, opts = {}) {
     if (drifted) {
       const { healUrl } = await import('./heal/urlheal.mjs'); // throws HEAL_NEEDED if unresolvable
       const r = await healUrl({ region, area: opts.area, key: opts.key, page, state });
-      resp = await page.goto(regionUrl(region, r.path), { waitUntil: 'domcontentloaded' });
+      resp = await page.goto(mergeQuery(regionUrl(region, r.path), fullUrl), { waitUntil: 'domcontentloaded' });
       if (Array.isArray(state?.healed)) state.healed.push({ area: opts.area, key: opts.key, kind: 'url', old: r.old, new: r.path, confidence: r.confidence });
     }
   }
