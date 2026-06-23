@@ -66,3 +66,8 @@ export function hasEndpoint(area, key) {
   const a = endpoints[area];
   return (key == null ? a : a?.[key]) != null;
 }
+
+// Editable config maps (cost-config.json / travel-allowance.json). Missing -> {}.
+export function config(name) {
+  return load(name, true);
+}

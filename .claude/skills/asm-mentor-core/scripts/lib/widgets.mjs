@@ -163,15 +163,16 @@ function submitSucceeded(finalUrl, dialogs) {
 //   eventDate, startTime, endTime, capacity, place, body? }
 export async function fillMentoForm(page, region, payload, files, { preview, update } = {}) {
   const S = (k) => sel('mento', k, region);
-  // 1. 강의구분
+  // 1. 강의구분 — custom-styled radios (real input hidden) -> use robust JS-click fallback
   if (payload.category) {
     const isLecture = /특강/.test(payload.category);
-    await page.locator(isLecture ? S('catLecture') : S('catFree')).first().check().catch(() => {});
+    await checkRadio(page, isLecture ? S('catLecture') : S('catFree'));
+    await page.waitForTimeout(300);
   }
   // 2. (부산) 진행방식 -> place 옵션 재로딩
   if (region === 'busan' && payload.method) {
     const online = /온라인/.test(payload.method);
-    await page.locator(online ? S('methodOnline') : S('methodOffline')).first().check().catch(() => {});
+    await checkRadio(page, online ? S('methodOnline') : S('methodOffline'));
     await page.waitForTimeout(600);
   }
   // 3. 모집명

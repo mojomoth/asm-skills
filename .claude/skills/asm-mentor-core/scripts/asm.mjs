@@ -88,6 +88,7 @@ const COMMAND_LIST = [
   'notices-list', 'notice-view', 'team', 'roster', 'schedule',
   'mento-list', 'mento-view', 'mento-create', 'mento-update', 'mento-delete',
   'report-list', 'report-view', 'report-draft', 'report-create',
+  'cost',
   'fund-list', 'fund-view', 'fund-comment',
   'room-availability', 'room-reserve', 'room-cancel',
   'member-info', 'screenshot',
@@ -129,6 +130,7 @@ async function route(command, ctx) {
     case 'report-view': return (await import('./lib/commands/report.mjs')).view(ctx);
     case 'report-draft': return (await import('./lib/commands/report.mjs')).draft(ctx);
     case 'report-create': return (await import('./lib/commands/report.mjs')).create(ctx);
+    case 'cost': return (await import('./lib/commands/cost.mjs')).run(ctx);
     case 'fund-list': return (await import('./lib/commands/fund.mjs')).list(ctx);
     case 'fund-view': return (await import('./lib/commands/fund.mjs')).view(ctx);
     case 'fund-comment': return (await import('./lib/commands/fund.mjs')).comment(ctx);

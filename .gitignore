@@ -6,11 +6,12 @@
 # node
 node_modules/
 
-# runtime data (sessions, recon artifacts, screenshots, dedup ledger)
+# runtime data (sessions, recon artifacts, screenshots, dedup ledger, scratch)
 .agentdocs/asm/sessions/
 .agentdocs/asm/state/
 .agentdocs/asm/recon/
 .agentdocs/asm/artifacts/
+.agentdocs/asm/tmp/
 
 # OS
 .DS_Store
