@@ -3,8 +3,9 @@ name: asm-mentor-core
 description: >-
   AI·SW 마에스트로(swmaestro.ai) 멘토 MY PAGE 자동화 엔진. 서울/부산 로그인·세션 유지와
   공통 CLI(asm.mjs)를 제공한다. "ASM", "AI SW 마에스트로", "마에스트로", "swmaestro",
-  "멘토링/특강 등록", "보고서 제출/보고 게시판", "회의실 예약", "공지/팀매칭/월간일정/활동비/회원정보",
-  "마에스트로 로그인/세션" 관련 작업이면 이 스킬과 하위 asm-mentor-* 스킬을 사용한다.
+  "멘토링/특강 등록", "보고서 제출/보고 게시판", "회의실 예약", "부산 숙박 예약",
+  "공지/팀매칭/월간일정/활동비/회원정보", "마에스트로 로그인/세션" 관련 작업이면 이 스킬과 하위
+  asm-mentor-* 스킬을 사용한다.
 allowed-tools: Bash, Read
 ---
 
@@ -13,7 +14,7 @@ allowed-tools: Bash, Read
 `.env`(ASM_HOMEPAGE_ID/PW, ASM_SEOUL/BUSAN_HOMEPAGE_URL)로 서울·부산에 로그인하고
 MY PAGE를 자동화하는 Node CLI. 조회는 인증 HTTP(빠름), 쓰기/그리드는 headless 브라우저를 쓴다.
 세부 워크플로우는 하위 스킬(`asm-mentor-room`, `asm-mentor-mentoring`, `asm-mentor-report`,
-`asm-mentor-board`)에 있고, 모두 이 코어 CLI를 호출한다.
+`asm-mentor-board`, `asm-mentor-stay`)에 있고, 모두 이 코어 CLI를 호출한다.
 
 ## 실행 방법
 프로젝트 루트에서:
@@ -51,6 +52,7 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 | `fund-list` / `fund-view` / `fund-comment` | seoul | http/browser | `--kind project\|device` / `--id <foundId>` / `--text` `--delete` |
 | `room-availability` / `room-reserve` / `room-cancel` | seoul/busan | browser | `--date` `--room` `--itemId` `--start` `--end` `--title` `--num` / `--rentId` |
 | `screenshot` | seoul/busan | browser | `--url <상대경로>` `--out` `--fullPage` |
+| `stay-login` / `stay-availability` / `stay-reserve` / `stay-cancel` / `stay-list` / `stay-profile` | busan-stay | browser | (부산 숙박예약, 별도 로그인) `--month` `--branch` `--date` `--status` `--preview` — 상세는 `asm-mentor-stay` 참조 |
 
 `--json` 은 인라인 JSON 문자열 또는 `@파일경로`. `--files` 는 콤마구분(프로젝트 루트 기준 상대/절대경로).
 
@@ -58,6 +60,9 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 - 서울/부산은 같은 호스트·JSESSIONID를 공유하므로 **region별 별도 storageState**(`.agentdocs/asm/sessions/`)를 쓴다.
 - 모든 명령은 만료를 감지하면 `.env`로 **자동 재로그인 후 1회 재시도**한다(`meta.reLoggedIn:true`).
 - 명시적 로그인: `asm login --region seoul|busan`. 상태확인: `asm session-status --region ...`.
+- `busan-stay`(부산 숙박예약)는 메인 사이트와 **완전히 별도의 로그인/자격증명/세션**을 쓴다
+  (`ASM_BUSAN_STAY_BOOKIN_PW`, 자체 로그인폼). `login`/`session-status`가 아닌 `stay-login` 을 쓴다 —
+  상세는 `asm-mentor-stay` 참조.
 
 ## 에러 코드
 `VALIDATION` `LOGIN_FAILED` `SESSION_EXPIRED` `SELECTOR_NOT_FOUND` `ENDPOINT_NOT_FOUND`

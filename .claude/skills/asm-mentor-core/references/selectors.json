@@ -96,5 +96,19 @@
       "submitBtn": { "css": "#saveBtn", "desc": { "tag": "button", "btnText": "신청", "form": "frm", "consume": "both", "criticality": "high" } },
       "cancelBtn": { "css": "a[onclick*='mod('], button[onclick*='mod('], button:has-text('예약 취소'), a:has-text('예약 취소')", "desc": { "tag": "a", "btnText": "예약 취소", "onclick": "mod", "consume": "locator", "criticality": "high" } }
     }
+  },
+  "stay": {
+    "_comment": "부산 숙박예약(booking, region=busan-stay). asm recon --region busan-stay 로 확인된 실제 DOM(2026-07-01) 기반. 필터(지점/월/상태)는 UI 조작 대신 쿼리스트링(year,month,branchId,status) 직접 이동으로 처리하므로 별도 셀렉터가 필요 없다. 신청/취소는 동일한 SweetAlert2 확인 모달(.swal2-confirm)을 공유한다. 로그인/비밀번호생성/신청/취소는 criticality:high (Tier-2 전용, 자동치유 안 함). 비밀번호 생성 폼(newPassword*)은 실제 첫 로그인 케이스로 검증되지 않은 최선 추정치 — 틀리면 HEAL_NEEDED로 위임됨.",
+    "_default": {
+      "username": { "css": "#email", "desc": { "tag": "input", "type": "email", "name": "email", "label": "이메일 (아이디)", "criticality": "high" } },
+      "password": { "css": "#password", "desc": { "tag": "input", "type": "password", "name": "password", "label": "비밀번호", "criticality": "high" } },
+      "submit": { "css": "form button[type=submit]", "desc": { "tag": "button", "btnText": "로그인", "consume": "locator", "criticality": "high" } },
+      "newPassword": { "css": "input[name=newPassword], #newPassword", "desc": { "tag": "input", "type": "password", "label": "새 비밀번호", "criticality": "high" } },
+      "newPasswordConfirm": { "css": "input[name=newPasswordConfirm], #newPasswordConfirm", "desc": { "tag": "input", "type": "password", "label": "비밀번호 확인", "criticality": "high" } },
+      "newPasswordSubmit": { "css": "button:has-text('확인'), button:has-text('저장'), button[type=submit]", "desc": { "tag": "button", "btnText": "확인", "consume": "locator", "criticality": "high" } },
+      "applyBtn": { "css": "button.booking-apply-btn", "desc": { "tag": "button", "btnText": "예약가능", "onclick": "confirmAction", "consume": "locator", "criticality": "high" } },
+      "cancelBtn": { "css": "button.booking-cancel-btn", "desc": { "tag": "button", "btnText": "취소", "onclick": "confirmAction", "consume": "locator", "criticality": "high" } },
+      "modalConfirmBtn": { "css": ".swal2-confirm", "desc": { "tag": "button", "btnText": "확인", "consume": "locator", "criticality": "high" } }
+    }
   }
 }
