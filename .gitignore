@@ -13,5 +13,8 @@ node_modules/
 .agentdocs/asm/artifacts/
 .agentdocs/asm/tmp/
 
+# log
+.agentdocs/logs/
+
 # OS
 .DS_Store
