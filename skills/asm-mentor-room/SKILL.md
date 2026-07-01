@@ -9,7 +9,7 @@ allowed-tools: Bash, Read
 
 # asm-mentor-room — 회의실 예약
 
-코어 CLI 사용: `node .claude/skills/asm-mentor-core/scripts/asm.mjs <cmd> --region seoul|busan ...`
+코어 CLI 사용: `node "${CLAUDE_PLUGIN_ROOT}/skills/asm-mentor-core/scripts/asm.mjs" <cmd> --region seoul|busan ...`
 세션/JSON 규칙은 `asm-mentor-core` SKILL 참조.
 
 ## 가용시간 조회

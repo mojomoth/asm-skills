@@ -12,20 +12,35 @@ import { homedir } from 'node:os';
 export function findProjectRoot(startDir) {
   let dir = startDir || dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 12; i++) {
+    // Authoritative plugin-root boundary: a `.claude-plugin/` dir unambiguously
+    // marks this directory as a plugin/marketplace root. Check it FIRST, before
+    // .env/.claude, so the climb stops here instead of wandering past a
+    // marketplace-cache install (~/.claude/plugins/cache/asm-mentor-*/<ver>/…)
+    // all the way up to ~/.claude (which always exists) and returning $HOME.
+    if (existsSync(join(dir, '.claude-plugin'))) return dir;
     if (existsSync(join(dir, '.env')) || existsSync(join(dir, '.claude'))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  // fallback: lib -> scripts -> asm-mentor-core -> skills -> .claude -> ROOT
-  return resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
+  // fallback: lib -> scripts -> asm-mentor-core -> skills -> ROOT
+  // (one level shallower than before the .claude/skills/* -> skills/* move)
+  return resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 }
 
 export const PROJECT_ROOT = findProjectRoot();
 
 // Is PROJECT_ROOT a genuine project (dev repo) rather than a plugin install?
-// A plugin lives under a ".../plugins/..." path; a real repo has a .env or a
-// .claude dir that is NOT under a plugins/ segment.
+//
+// NOTE: this repo is a self-hosted plugin+marketplace (repo root ==
+// .claude-plugin root == marketplace root), so `.claude-plugin` existing in
+// PROJECT_ROOT does NOT by itself distinguish "author's own dev clone" from
+// "installed marketplace-cache copy" — both contain it. The reliable signal
+// is filesystem LOCATION: a marketplace-cache install always sits under a
+// literal "plugins" path segment (~/.claude/plugins/cache/...); a dev clone
+// (or a `--plugin-dir` pointed straight at the working tree) does not. Do
+// NOT add a `.claude-plugin`-presence check here — it would misclassify the
+// author's own repo (and anyone's --plugin-dir dev/testing) as non-genuine.
 function isGenuineProject(root) {
   const underPlugins = root.split(sep).includes('plugins');
   if (underPlugins) return false; // a plugin install is never the dev-repo state base

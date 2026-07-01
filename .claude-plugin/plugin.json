@@ -1,0 +1,8 @@
+{
+  "name": "asm-mentor",
+  "description": "AI·SW 마에스트로(swmaestro.ai) 멘토 MY PAGE 자동화 — 로그인/세션 유지, 회의실 예약, 멘토링·특강 등록, 보고서 제출, 공지·일정·팀 조회, 부산 숙박 예약을 자연어로 처리하는 Claude Code 스킬 모음.",
+  "version": "0.1.0",
+  "author": { "name": "JeongYoung Lee", "email": "mojomoth@gmail.com" },
+  "repository": "https://github.com/mojomoth/asm-skills",
+  "keywords": ["swmaestro", "ai-sw-maestro", "mentor", "automation", "playwright", "korea"]
+}

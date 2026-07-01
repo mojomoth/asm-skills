@@ -1,0 +1,13 @@
+{
+  "name": "asm-mentor",
+  "description": "AI·SW 마에스트로(swmaestro.ai) 멘토 업무 자동화 스킬 모음을 배포하는 자체(self-hosted) 마켓플레이스.",
+  "owner": { "name": "JeongYoung Lee", "email": "mojomoth@gmail.com" },
+  "plugins": [
+    {
+      "name": "asm-mentor",
+      "source": "./",
+      "description": "AI·SW 마에스트로 멘토 MY PAGE 자동화 스킬 모음 (회의실 예약·멘토링/특강·보고서·공지/일정/팀·부산 숙박예약).",
+      "version": "0.1.0"
+    }
+  ]
+}

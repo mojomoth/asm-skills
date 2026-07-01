@@ -1,16 +1,20 @@
-# asm-skills — AI·SW 마에스트로 멘토 자동화 스킬 모음
+# asm-skills — AI·SW 마에스트로 멘토 자동화 스킬 모음 (Claude Code 플러그인)
 
 [AI·SW 마에스트로(swmaestro.ai)](http://swmaestro.ai/) 멘토 **MY PAGE**를 자동화하는 Claude Code 스킬 모음입니다.
-서울/부산 로그인·세션 유지부터 회의실 예약, 멘토링·특강 등록, 보고서 제출, 공지·일정·팀 조회까지
-멘토 업무 전반을 자연어 명령으로 처리합니다.
+서울/부산 로그인·세션 유지부터 회의실 예약, 멘토링·특강 등록, 보고서 제출, 공지·일정·팀 조회, 부산 숙박
+예약까지 멘토 업무 전반을 자연어 명령으로 처리합니다.
 
 > 모든 스킬은 한국어로 동작하며, 하나의 공통 엔진(`asm.mjs`)을 호출합니다.
+
+> 이 저장소는 그 자체로 **Claude Code 플러그인이자 자기 자신을 배포하는 마켓플레이스**입니다
+> (`.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`, self-referencing). 클론 없이
+> `/plugin install` 한 번으로 설치할 수 있습니다.
 
 ---
 
 ## 구성
 
-`.claude/skills/` 아래 6개의 스킬로 이루어져 있습니다.
+`skills/` 아래 7개의 스킬로 이루어져 있습니다.
 
 | 스킬 | 역할 |
 |---|---|
@@ -20,6 +24,7 @@
 | **asm-mentor-report** | 보고 게시판(서울 전용) — 보고서 제출/승인 내역(인정시간·지급액) 조회, 진행 멘토링 자동채움 후 제출 |
 | **asm-mentor-board** | 조회 묶음 — 공지사항, 월간일정, 팀매칭(+Notion 명단), 회원정보, 신청·접수(활동비/평가의견) |
 | **asm-mentor-cost** | 비용 계산 — 전체/서울/부산, 한 달 기준 강의료(시간당 200,000원, 하루 1~3시간) + 부산 오프라인 출장수당 |
+| **asm-mentor-stay** | 부산센터 숙박 예약(swmaestro.ai/booking, 메인 사이트와 별도 로그인/세션) — 예약 가능 현황 조회, 신청, 취소 |
 
 ### 동작 방식
 
@@ -32,18 +37,41 @@
 
 ## 설치
 
-### 요구 사항
+### 플러그인으로 설치 (권장)
+
+Claude Code에서:
+```
+/plugin marketplace add mojomoth/asm-skills
+/plugin install asm-mentor@asm-mentor
+```
+설치 후 세션 시작 시 의존성(Playwright 등)이 `hooks/setup.sh`를 통해 자동으로 준비됩니다
+(최초 1회는 Chromium 다운로드 때문에 다소 걸릴 수 있습니다).
+
+**최초 1회, 자격증명을 로컬에 설정**합니다 — 이 정보는 홈 디렉터리에만 저장되며 이 저장소/플러그인에는
+절대 포함되지 않습니다:
+```
+mkdir -p ~/.config/asm-mentor
+cp "${CLAUDE_PLUGIN_ROOT}/.env.example" ~/.config/asm-mentor/.env
+chmod 600 ~/.config/asm-mentor/.env
+# ~/.config/asm-mentor/.env 를 열어 ID/PW 입력
+```
+
+### 개발자용: 로컬 클론으로 실행
+
+이 저장소를 직접 클론해 수정하며 쓰고 싶다면:
+
+**요구 사항**
 - Node.js 18+ (ESM)
 - 엔진 의존성: `playwright`, `node-html-parser`
 
-### 1. 의존성 설치 및 브라우저 다운로드
+**1. 의존성 설치 및 브라우저 다운로드**
 ```bash
-cd .claude/skills/asm-mentor-core
+cd skills/asm-mentor-core
 npm install
 npx playwright install chromium
 ```
 
-### 2. 환경 변수 설정
+**2. 환경 변수 설정**
 프로젝트 루트에 `.env`를 만들고 마에스트로 계정 정보를 넣습니다. (`.env.example` 참고)
 
 ```bash
@@ -60,6 +88,13 @@ ASM_HOMEPAGE_PW=your-password
 
 > `.env`는 실제 자격증명을 담으므로 **절대 커밋하지 마세요.** (`.gitignore`에 이미 제외되어 있습니다.)
 
+**3. Claude Code에 로드**
+```bash
+claude --plugin-dir .
+```
+또는 저장소를 그대로 열면 `.claude/settings.json`의 `extraKnownMarketplaces` 설정으로 자동으로
+설치를 제안받습니다.
+
 ---
 
 ## 사용법
@@ -71,11 +106,13 @@ Claude Code에서 자연어로 요청하면 적절한 스킬이 선택됩니다.
 - "이번 달 인정시간이랑 지급액 보여줘"
 - "최근 공지사항 확인해줘"
 
-엔진 CLI를 직접 실행할 수도 있습니다(프로젝트 루트 기준):
+엔진 CLI를 직접 실행할 수도 있습니다:
 
 ```bash
-node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|busan [옵션]
+node "${CLAUDE_PLUGIN_ROOT}/skills/asm-mentor-core/scripts/asm.mjs" <command> --region seoul|busan [옵션]
 ```
+(로컬 클론에서는 `${CLAUDE_PLUGIN_ROOT}` 대신 `node skills/asm-mentor-core/scripts/asm.mjs`로 프로젝트
+루트에서 실행하면 됩니다.)
 
 ### 주요 명령
 
@@ -92,7 +129,7 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 | `room-availability` / `room-reserve` / `room-cancel` | seoul/busan | 회의실 가용시간·예약·취소 |
 | `screenshot` / `recon` | seoul/busan | 화면 캡처 / 사이트 구조 재파악 |
 
-전체 명령·옵션은 [`asm-mentor-core/SKILL.md`](.claude/skills/asm-mentor-core/SKILL.md)를 참고하세요.
+전체 명령·옵션은 [`asm-mentor-core/SKILL.md`](skills/asm-mentor-core/SKILL.md)를 참고하세요.
 
 ---
 
@@ -119,18 +156,25 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 
 ```
 .
-├── .claude/
-│   ├── settings.json            # 관찰(observe) 훅 설정
-│   ├── hooks/observe.sh
-│   └── skills/
-│       ├── asm-mentor-core/     # 엔진 + CLI(scripts/asm.mjs) + references/
-│       ├── asm-mentor-room/
-│       ├── asm-mentor-mentoring/
-│       ├── asm-mentor-report/
-│       ├── asm-mentor-board/
-│       └── asm-mentor-cost/
+├── .claude-plugin/
+│   ├── plugin.json              # 플러그인 매니페스트
+│   └── marketplace.json         # 자체 배포 마켓플레이스 (source: "./")
+├── hooks/
+│   ├── hooks.json                # SessionStart 훅 설정
+│   └── setup.sh                  # 의존성(playwright 등) 자동 설치 스크립트
+├── skills/
+│   ├── asm-mentor-core/         # 엔진 + CLI(scripts/asm.mjs) + references/
+│   ├── asm-mentor-room/
+│   ├── asm-mentor-mentoring/
+│   ├── asm-mentor-report/
+│   ├── asm-mentor-board/
+│   ├── asm-mentor-cost/
+│   └── asm-mentor-stay/
+├── .claude/                     # 저장소 소유자 개인 개발 설정(관찰 훅) — 플러그인 패키지에는 포함되지 않음
+│   ├── settings.json
+│   └── hooks/observe.sh
 ├── .agentdocs/                  # 런타임 산출물(세션·recon·스크린샷·로그) — 대부분 gitignore
-├── .env                         # 자격증명 (gitignore)
+├── .env                         # 자격증명 (gitignore, 로컬 클론 개발용)
 └── .env.example
 ```
 

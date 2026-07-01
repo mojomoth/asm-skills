@@ -3,8 +3,9 @@
 .env.*
 !.env.example
 
-# node
-node_modules/
+# node (no trailing slash: also ignore the symlinked node_modules the plugin
+# SessionStart hook creates, pointing at CLAUDE_PLUGIN_DATA)
+node_modules
 
 # runtime data (sessions, recon artifacts, screenshots, dedup ledger, scratch)
 .agentdocs/asm/sessions/
