@@ -41,7 +41,7 @@ function parseListRows(root) {
 export async function list(ctx) {
   const { region, state, flags } = ctx;
   const myName = flags.mine ? await getMyName(region, state) : null;
-  const { body } = await httpGet(region, buildListUrl(region, flags, myName), { state });
+  const { body } = await httpGet(region, buildListUrl(region, flags, myName), { state, area: 'mento', key: 'list' });
   const items = parseListRows(parse(body));
   return { region, mine: !!flags.mine, myName, count: items.length, items };
 }
@@ -124,8 +124,8 @@ export async function create(ctx) {
     throw new AsmError('WRITE_BLOCKED', `시간이 겹치는 내 멘토링이 ${conflicts.length}건 있습니다.`, { conflicts, hint: '시간 변경 또는 --force 로 강행' });
   }
   return withSession(region, async ({ page }) => {
-    await gotoGuarded(page, region, regionUrl(region, url('mento', 'insert')), state);
-    const res = await fillMentoForm(page, region, payload, files, { preview });
+    await gotoGuarded(page, region, regionUrl(region, url('mento', 'insert')), state, { area: 'mento', key: 'insert' });
+    const res = await fillMentoForm(page, region, payload, files, { preview, heal: ctx.heal });
     if (preview) return { preview: true, region, conflicts, ...res };
     return { created: true, region, conflicts, ...res };
   }, { state });
@@ -142,7 +142,7 @@ export async function update(ctx) {
     const editSel = sel('mento', 'editBtn', region);
     if (await page.locator(editSel).count()) await page.locator(editSel).first().click().catch(() => {});
     await page.waitForLoadState('domcontentloaded').catch(() => {});
-    const res = await fillMentoForm(page, region, payload, files, { preview, update: true });
+    const res = await fillMentoForm(page, region, payload, files, { preview, update: true, heal: ctx.heal });
     if (preview) return { preview: true, region, qustnrSn: id, ...res };
     return { updated: true, region, qustnrSn: id, ...res };
   }, { state });

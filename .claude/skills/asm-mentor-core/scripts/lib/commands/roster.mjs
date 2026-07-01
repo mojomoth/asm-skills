@@ -49,7 +49,11 @@ async function discoverCollection(page, pageUrl) {
   page.off('request', onReq);
   page.off('response', onResp);
   if (!resp) {
-    const why = throttled ? 'Notion 요청이 일시 차단(429)되었습니다 — 잠시 후 다시 시도하세요.' : 'Notion queryCollection 응답을 가로채지 못했습니다 (페이지 구조 변경 가능).';
+    // 응답 누락은 명시적 429뿐 아니라 '조용한' 일시 차단(soft-throttle)으로도 자주 발생한다.
+    // 짧은 시간에 같은 Notion 페이지를 여러 번 열면 응답을 늦추거나 주지 않는다 → 구조 변경으로 오인 금지.
+    const why = throttled
+      ? 'Notion 요청이 일시 차단(429)되었습니다 — 잠시 후 다시 시도하세요.'
+      : 'Notion queryCollection 응답을 가로채지 못했습니다 — 짧은 시간 내 반복 조회로 인한 일시 차단(throttle)일 가능성이 큽니다. 잠시 후 재시도하거나, 여러 명은 --search "이름1,이름2"로 한 번에 조회하세요.';
     throw new AsmError(throttled ? 'TIMEOUT' : 'NAV_ERROR', why, { url: pageUrl, throttled });
   }
 
@@ -144,16 +148,24 @@ export async function roster(ctx) {
       } catch (e) {
         lastErr = e;
       }
-      await page.waitForTimeout(4000 * (attempt + 1));
+      // throttle은 가라앉는 데 시간이 걸리므로 지수 백오프 + 지터로 마지막 시도까지 충분히 기다린다.
+      const backoff = 6000 * Math.pow(2, attempt) + Math.floor(Math.random() * 2000); // ~6s, ~12s
+      await page.waitForTimeout(backoff);
     }
     throw lastErr || new AsmError('NAV_ERROR', 'Notion 명단 조회 실패', { url: pageUrl });
   }, { state });
 
   const all = data.rows || [];
   let rows = all;
-  if (search) {
-    const q = search.toLowerCase();
-    rows = all.filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)));
+  // --search 는 쉼표로 여러 이름을 받는다(예: "안용수,문재윤,오혜린"). 어떤 행이든 값 하나라도
+  // 어떤 검색어 하나라도 포함하면 매칭. 전체 명단을 1회만 받아 한 팀의 여러 명을 한 번에 거르므로
+  // 사람 수만큼 브라우저를 띄우다 Notion에 일시 차단(throttle) 당하는 일을 막는다.
+  const terms = search ? search.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean) : [];
+  if (terms.length) {
+    rows = all.filter((r) => {
+      const hay = Object.values(r).map((v) => String(v).toLowerCase());
+      return terms.some((q) => hay.some((v) => v.includes(q)));
+    });
   }
   return {
     region,
@@ -162,6 +174,7 @@ export async function roster(ctx) {
     collectionTitle: data.title || null,
     columns: data.columns || [],
     search,
+    searchTerms: terms.length ? terms : null,
     count: rows.length,
     totalCount: all.length,
     truncated: !!data.hasMore,

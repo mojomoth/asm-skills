@@ -1,5 +1,5 @@
 {
-  "_comment": "Selector map captured via `asm recon` 2026-06-18. area -> { _default, seoul, busan }. Re-run recon and edit here when the site changes.",
+  "_comment": "Selector map captured via `asm recon` 2026-06-18. area -> { _default, seoul, busan } -> key -> CSS string OR {css, desc}. The optional desc enables AUTONOMOUS self-heal: when the css no longer resolves, the healer re-locates the element from these stable semantic anchors (name/label/type/value/btnText) and writes the new css to the gitignored override layer. Plain-string entries are unchanged (no heal). desc fields (all optional): label(Korean), name(HTML name attr), tag, type, value(radio/checkbox), optionSet[], btnText, onclick(fn), form(scoping form id), frame, consume('locator'|'querySelector'|'both'), criticality('high'=>always Tier-2, never auto). Re-run recon + `asm heal` when the site changes; never hand-edit the override layer.",
   "login": {
     "_default": {
       "username": "#username",
@@ -16,26 +16,26 @@
   "mento": {
     "_default": {
       "form": "form#board",
-      "catFree": "#MRC010",
-      "catLecture": "#MRC020",
-      "title": "#qustnrSj",
+      "catFree": { "css": "#MRC010", "desc": { "tag": "input", "type": "radio", "name": "reportCd", "value": "MRC010", "label": "자유멘토링", "form": "board" } },
+      "catLecture": { "css": "#MRC020", "desc": { "tag": "input", "type": "radio", "name": "reportCd", "value": "MRC020", "label": "멘토특강", "form": "board" } },
+      "title": { "css": "#qustnrSj", "desc": { "tag": "input", "type": "text", "name": "qustnrSj", "label": "모집명", "form": "board" } },
       "receiptBefore": "#receiptTypeLecture",
       "receiptDirect": "#receiptTypeDirect",
       "bgnDate": "#bgndeDate",
       "bgnTime": "#bgndeTime",
       "endDate": "#enddeDate",
       "endTime": "#enddeTime",
-      "eventDate": "#eventDt",
+      "eventDate": { "css": "#eventDt", "desc": { "tag": "input", "type": "text", "name": "eventDt", "label": "강의날짜", "form": "board" } },
       "eventStime": "#eventStime",
       "eventEtime": "#eventEtime",
       "applyCnt": "#applyCnt",
       "applySelect1": "#applyNewCnt1",
       "applySelect2": "#applyNewCnt2",
-      "place": "#place",
+      "place": { "css": "#place", "desc": { "tag": "select", "type": "select-one", "name": "place", "label": "진행장소", "form": "board" } },
       "fileInput": "#file_1_1",
       "bodyTextarea": "#qestnarCn",
       "csrf": "input[name=csrfToken]",
-      "submitBtn": "a:has-text('등록'), button:has-text('등록')",
+      "submitBtn": { "css": "a:has-text('등록'), button:has-text('등록')", "desc": { "tag": "a", "btnText": "등록", "onclick": "checkForm", "form": "board", "consume": "locator", "criticality": "high" } },
       "deleteBtn": "a:has-text('삭제'), button:has-text('삭제')",
       "editBtn": "a:has-text('수정'), button:has-text('수정')"
     },
@@ -47,15 +47,15 @@
   "report": {
     "_default": {
       "form": "form#board",
-      "regionSeoul": "#menteeRegionCd_0",
-      "regionBusan": "#menteeRegionCd_1",
+      "regionSeoul": { "css": "#menteeRegionCd_0", "desc": { "tag": "input", "type": "radio", "name": "menteeRegionCd", "value": "S", "label": "서울연수생", "form": "board" } },
+      "regionBusan": { "css": "#menteeRegionCd_1", "desc": { "tag": "input", "type": "radio", "name": "menteeRegionCd", "value": "B", "label": "부산연수생", "form": "board" } },
       "gubunRegular": "#state1_1",
       "gubunFree": "#state1_2",
       "gubunLecture": "#state1_3",
       "progressDate": "#progressDt",
       "teamInput": "#teamNmsInput",
       "teamHidden": "input[name=teamNms]",
-      "place": "#progressPlace",
+      "place": { "css": "#progressPlace", "desc": { "tag": "select", "type": "select-one", "name": "progressPlace", "label": "진행장소", "form": "board" } },
       "attendanceCnt": "#attendanceCnt",
       "attendanceInput": "#attendanceNmsInput",
       "attendanceHidden": "input[name=attendanceNms]",
@@ -70,7 +70,7 @@
       "exEndHour": "#exceptEtimeHour",
       "exEndMin": "#exceptEtimeMin",
       "exReason": "#exceptReason",
-      "subject": "#subject",
+      "subject": { "css": "#subject", "desc": { "tag": "input", "type": "text", "name": "subject", "label": "주제", "form": "board" } },
       "nttCn": "#nttCn",
       "mentoOpn": "#mentoOpn",
       "etc": "#etc",
@@ -78,13 +78,13 @@
       "fileNameInput": "#upload-name_file_1_1",
       "csrf": "#csrfToken",
       "addButtons": "button:has-text('추가'), a:has-text('추가')",
-      "submitBtn": "button:has-text('저장'), a:has-text('저장')"
+      "submitBtn": { "css": "button:has-text('저장'), a:has-text('저장')", "desc": { "tag": "button", "btnText": "저장", "onclick": "checkForm", "form": "board", "consume": "locator", "criticality": "high" } }
     }
   },
   "room": {
     "_default": {
       "form": "form#frm",
-      "title": "#title",
+      "title": { "css": "#title", "desc": { "tag": "input", "type": "text", "name": "title", "label": "제목", "form": "frm" } },
       "rentDate": "#rentDt",
       "rentNum": "#rentNum",
       "slotCheckbox": "input[name=time]",
@@ -93,8 +93,8 @@
       "itemId": "#itemId",
       "rentRangeStart": "#rentBgnde",
       "rentRangeEnd": "#rentEndde",
-      "submitBtn": "#saveBtn",
-      "cancelBtn": "a[onclick*='mod('], button[onclick*='mod('], button:has-text('예약 취소'), a:has-text('예약 취소')"
+      "submitBtn": { "css": "#saveBtn", "desc": { "tag": "button", "btnText": "신청", "form": "frm", "consume": "both", "criticality": "high" } },
+      "cancelBtn": { "css": "a[onclick*='mod('], button[onclick*='mod('], button:has-text('예약 취소'), a:has-text('예약 취소')", "desc": { "tag": "a", "btnText": "예약 취소", "onclick": "mod", "consume": "locator", "criticality": "high" } }
     }
   }
 }

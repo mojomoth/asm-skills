@@ -2,8 +2,11 @@
 // JSESSIONID cookie from the region's storageState and transparently re-logins via
 // the browser when the server signals an expired session.
 import { readFileSync, existsSync } from 'node:fs';
-import { sessionFile, regionUrl, regionBase, relogin } from './session.mjs';
+import { sessionFile, regionUrl, regionBase, relogin, isLoginPage } from './session.mjs';
 import { AsmError, log } from './io.mjs';
+
+function menuNoOf(s) { const m = String(s || '').match(/[?&]menuNo=(\d+)/); return m ? m[1] : null; }
+function doFileOf(s) { const m = String(s || '').split('?')[0].match(/([^/]+\.do)$/i); return m ? m[1].toLowerCase() : null; }
 
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36';
@@ -65,7 +68,11 @@ async function fetchFollow(region, fullUrl, opts = {}) {
 }
 
 // Authenticated GET returning { status, url, body, headers }. Re-logins once on expiry.
-export async function httpGet(region, relPath, { state = {}, accept } = {}) {
+// When { area } is supplied (and state.autoHeal !== false), detects URL drift AFTER the
+// auth/relogin handling and throws AsmError('URL_CHANGED') so the top-level envelope can
+// re-discover the path by menuNo and retry. Detection is conservative — a healthy page
+// (status<400, same .do, menuNo still present) never trips it.
+export async function httpGet(region, relPath, { state = {}, accept, area, key } = {}) {
   state.path = 'http';
   const fullUrl = regionUrl(region, relPath);
   let { res, current, authRedirect } = await fetchFollow(region, fullUrl, { accept });
@@ -77,6 +84,19 @@ export async function httpGet(region, relPath, { state = {}, accept } = {}) {
     if (authRedirect) throw new AsmError('SESSION_EXPIRED', 're-login retry failed (GET)');
     body = await res.text();
     if (looksLikeLoginHtml(body)) throw new AsmError('SESSION_EXPIRED', 're-login retry returned login page (GET)');
+  }
+  if (area && state.autoHeal !== false) {
+    const reqMenuNo = menuNoOf(relPath);
+    const reqDoFile = doFileOf(relPath);
+    const finalDoFile = doFileOf(current);
+    const drifted = res.status >= 400
+      || (reqMenuNo && reqDoFile && finalDoFile && finalDoFile !== reqDoFile
+          && !isLoginPage(current) && !new RegExp('menuNo=' + reqMenuNo).test(body));
+    if (drifted) {
+      throw new AsmError('URL_CHANGED', `read URL drift for ${area}.${key || ''} (status ${res.status})`, {
+        area, key: key || null, region, relPath, status: res.status, kind: 'url',
+      });
+    }
   }
   return { status: res.status, url: current, body, headers: res.headers };
 }

@@ -10,7 +10,7 @@
 
 ## 구성
 
-`.claude/skills/` 아래 5개의 스킬로 이루어져 있습니다.
+`.claude/skills/` 아래 6개의 스킬로 이루어져 있습니다.
 
 | 스킬 | 역할 |
 |---|---|
@@ -19,6 +19,7 @@
 | **asm-mentor-mentoring** | 멘토링/특강 게시판 — 목록·상세·신청자 조회, 내 강의 등록·수정·삭제(회의실 확보 + 시간충돌 검사) |
 | **asm-mentor-report** | 보고 게시판(서울 전용) — 보고서 제출/승인 내역(인정시간·지급액) 조회, 진행 멘토링 자동채움 후 제출 |
 | **asm-mentor-board** | 조회 묶음 — 공지사항, 월간일정, 팀매칭(+Notion 명단), 회원정보, 신청·접수(활동비/평가의견) |
+| **asm-mentor-cost** | 비용 계산 — 전체/서울/부산, 한 달 기준 강의료(시간당 200,000원, 하루 1~3시간) + 부산 오프라인 출장수당 |
 
 ### 동작 방식
 
@@ -126,7 +127,8 @@ node .claude/skills/asm-mentor-core/scripts/asm.mjs <command> --region seoul|bus
 │       ├── asm-mentor-room/
 │       ├── asm-mentor-mentoring/
 │       ├── asm-mentor-report/
-│       └── asm-mentor-board/
+│       ├── asm-mentor-board/
+│       └── asm-mentor-cost/
 ├── .agentdocs/                  # 런타임 산출물(세션·recon·스크린샷·로그) — 대부분 gitignore
 ├── .env                         # 자격증명 (gitignore)
 └── .env.example

@@ -32,8 +32,10 @@ function targetFor(area) {
 }
 
 // Runs IN THE BROWSER. Inventories the page DOM for selector/endpoint mapping.
+// Exported so the healer can re-run the same inventory on a live page (via evalJson)
+// without a separate navigation. MUST stay self-contained (no closure refs).
 /* eslint-disable */
-function pageDump() {
+export function pageDump() {
   const text = (el) => (el ? (el.innerText || el.textContent || '').trim().slice(0, 150) : null);
   const labelFor = (el) => {
     if (el.id) {
@@ -49,13 +51,17 @@ function pageDump() {
     id: f.id || null, name: f.name || null, action: f.getAttribute('action'), method: f.getAttribute('method'),
   }));
   const fields = [...document.querySelectorAll('input,select,textarea')].map((el) => {
+    const form = el.closest('form');
     const o = {
       tag: el.tagName.toLowerCase(), type: el.type || null, name: el.name || null, id: el.id || null,
       required: el.required || el.getAttribute('aria-required') === 'true' || null, label: labelFor(el),
+      form: (form && (form.id || form.name)) || null,
     };
     if (el.tagName.toLowerCase() === 'select') {
       o.options = [...el.options].map((op) => ({ value: op.value, text: (op.text || '').trim() })).slice(0, 80);
     }
+    // radio/checkbox value disambiguates same-name groups (MRC010 vs MRC020, menteeRegionCd_0/_1)
+    if (el.type === 'radio' || el.type === 'checkbox') o.value = el.value || null;
     if (el.type === 'hidden') { o.hidden = true; o.value = (el.value || '').slice(0, 40); }
     return o;
   });
@@ -80,6 +86,13 @@ function pageDump() {
   return { url: location.href, title: document.title, forms, fields, buttons, editors, jsFns, tables };
 }
 /* eslint-enable */
+
+// Inventory the CURRENT live page (no navigation) for the healer. String-in/string-out
+// via evalJson (the site poisons by-value serialization). Returns a safe empty shape on failure.
+export async function dumpArea(page) {
+  const dump = await evalJson(page, pageDump);
+  return dump || { url: page.url(), title: null, forms: [], fields: [], buttons: [], editors: {}, jsFns: [], tables: [] };
+}
 
 export async function recon({ region, area, rawUrl, state = {} }) {
   state.path = 'browser';

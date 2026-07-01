@@ -9,7 +9,7 @@ export async function list(ctx) {
   let rel = url('notices', 'list');
   if (flags.page) rel += `&pageIndex=${encodeURIComponent(flags.page)}`;
   if (flags.search) rel += `&searchCnd=${encodeURIComponent(flags.searchType || '1')}&searchWrd=${encodeURIComponent(flags.search)}`;
-  const { body } = await httpGet(region, rel, { state });
+  const { body } = await httpGet(region, rel, { state, area: 'notices', key: 'list' });
   const root = parse(body);
   const table = findTable(root, ['제목', '작성자']);
   const items = rowsOf(table)

@@ -1,0 +1,6 @@
+{
+  "_doc": "멘토링/특강 강의료 단가 + 일일 인정시간 캡. 인정시간 = clamp(해당일 세션 시간 합, dailyMinHours, dailyMaxHours). 강의료 = 인정시간 × hourlyRate. (보고서 소스 trust 모드는 사무국 공식 인정시간/지급액을 그대로 사용하므로 이 캡은 mento 소스/재계산에만 적용.)",
+  "hourlyRate": 200000,
+  "dailyMaxHours": 3,
+  "dailyMinHours": 1
+}
