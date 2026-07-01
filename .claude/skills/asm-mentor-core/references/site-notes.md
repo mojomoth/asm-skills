@@ -57,6 +57,38 @@
 - 예약내역 `itemRent/list.do`, 상세 `itemRent/view.do?rentId=`. 취소 버튼 존재.
 - 외부 토즈는 스킬 범위 외(브라우저 링크 안내만).
 
+## 부산 숙박예약 (stay, `swmaestro.ai/booking`, region=`busan-stay`, recon 2026-07-01)
+- **완전히 별도의 앱**(Thymeleaf 서버렌더링, Bootstrap5 + SweetAlert2). 메인 사이트와 origin은 같지만
+  (`https://www.swmaestro.ai`) prefix가 `/booking`이고 로그인/세션/CSRF가 독립적이다.
+- **로그인** `GET/POST /booking/login`: `#email`(type=email, name=email), `#password`
+  (type=password, name=password), submit `form button[type=submit]`("로그인"). 최초 로그인 비밀번호
+  placeholder에 "전화번호 숫자 마지막 4자리"라고 명시되어 있음. 첫 로그인 시 비밀번호 생성 화면으로
+  리다이렉트되는 것으로 보이나(안내 문구 기준), 이번 recon에서는 이미 영구 비밀번호가 설정된 계정이라
+  실제 화면은 확인하지 못함 — `newPassword`/`newPasswordConfirm`/`newPasswordSubmit` 셀렉터는 최선
+  추정치이며 틀리면 `HEAL_NEEDED`로 위임됨(로그인류는 Tier-2 전용, 자동치유 없음).
+- **신청 화면** `GET /booking/` (필터: `?year=&month=&branchId=`, GET form, `select[name=branchId]`
+  옵션은 `{value:branchId, text:"토요코인 서면점"|"토요코인 부산역1점"}` — id는 recon 시점 기준 3=서면점,
+  4=부산역1점이지만 지점 관리 화면에서 바뀔 수 있으므로 코드는 항상 옵션을 다시 읽어 이름으로 매칭한다).
+  예약 가능 요일(금·토/토·일)만 날짜 카드(`.card` + `table.app-table`)로 렌더링되고, 각 카드의
+  `tbody tr` 이 지점 1개: `td[0]`=지점명, `td[1]`=잔여객실 배지("N실"), `td[2]`= 신청 가능 시
+  `<form id="apply-{YYYYMMDD}-{branchId}" method=post action=/booking/reservations>` 안에 hidden
+  `_csrf`/`reservationDate`/`branchId` + `button.booking-apply-btn`("예약가능").
+- **신청/취소 확인 플로우(공통)**: 두 버튼(`.booking-apply-btn`/`.booking-cancel-btn`) 모두
+  `data-confirm`(안내 문구)/`data-form-id` 속성을 읽어 `window.confirmAction(msg, formId)` 호출 →
+  SweetAlert2 팝업(`.swal2-popup`, 확인 `.swal2-confirm`, 취소 `.swal2-cancel`) → 확인 클릭 시
+  `document.getElementById(formId).submit()`. 네이티브 `dialog` 이벤트가 아니라 **커스텀 DOM 모달**이므로
+  `page.on('dialog')` 로는 못 잡는다 — 버튼 클릭 → `.swal2-popup` 대기 → `.swal2-confirm` 클릭 → nav 대기.
+- **예약 내역** `GET /booking/reservations` (필터: `?month=YYYY-MM&branchId=&status=`, select 옵션
+  status: `REQUESTED`=예약 신청, `APPROVED`=예약 완료, `CANCELED`=예약 취소, `REJECTED`=예약 반려).
+  테이블 헤더: 숙박 날짜/숙박 지점/상태/신청일시/작업. "작업" 셀은 취소 가능한 건만
+  `button.booking-cancel-btn`(+ `#cancel-{id}` form, hidden 필드에 취소 대상 식별자)을 담고, 취소된
+  건은 `-`.
+- **내 정보** `GET /booking/profile` — `<table>`이 아니라 `dl.row > dt/dd` 쌍(순서 고정: 구분/이름/
+  이메일/전화번호/소속/근무지), 수정 불가(조회 전용).
+- 전부 서버 렌더링이라 읽기도 브라우저 경로로 통일(HTTP 패스트패스는 만들지 않음 — `http.mjs`의
+  재로그인은 메인 사이트 `login()` 전용이라 그대로 재사용하면 안 됨. `stay.mjs`는 자체
+  `stayLogin`/`gotoStay`/`withStaySession` 을 쓴다).
+
 ## 신청/접수 (fund, 서울 전용)
 - IT기기/자기주도학습 `myFound/list.do?menuNo=200053`, 프로젝트활동비 `…?menuNo=200054`.
 - 활동비 상세 `projectSpt/view.do?foundId=&menuNo=200054` — 멘토 평가의견 입력/삭제(활동비당 1개 이상 필요). 상세 폼 셀렉터는 view 페이지 recon 후 보강.

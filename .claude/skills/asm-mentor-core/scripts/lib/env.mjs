@@ -100,7 +100,10 @@ function readEnvFile(path) {
 function layeredEnv() {
   const userCfg = readEnvFile(join(homedir(), '.config', 'asm-mentor', '.env'));
   const repo = readEnvFile(join(PROJECT_ROOT, '.env'));
-  const KEYS = ['ASM_HOMEPAGE_ID', 'ASM_HOMEPAGE_PW', 'ASM_SEOUL_HOMEPAGE_URL', 'ASM_BUSAN_HOMEPAGE_URL'];
+  const KEYS = [
+    'ASM_HOMEPAGE_ID', 'ASM_HOMEPAGE_PW', 'ASM_SEOUL_HOMEPAGE_URL', 'ASM_BUSAN_HOMEPAGE_URL',
+    'ASM_BUSAN_STAY_BOOKIN_PW',
+  ];
   const out = { ...userCfg, ...repo };
   for (const k of KEYS) {
     if (process.env[k] != null && process.env[k] !== '') out[k] = process.env[k];
@@ -130,10 +133,18 @@ export function loadConfig() {
   _cfg = {
     projectRoot: PROJECT_ROOT,
     stateBase: STATE_BASE,
-    creds: { id: env.ASM_HOMEPAGE_ID || '', pw: env.ASM_HOMEPAGE_PW || '' },
+    creds: {
+      id: env.ASM_HOMEPAGE_ID || '',
+      pw: env.ASM_HOMEPAGE_PW || '',
+      // Separate password for the Busan 숙박예약(booking) site — distinct login, distinct
+      // credential from the main-site ASM_HOMEPAGE_PW. See lib/commands/stay.mjs.
+      stayPw: env.ASM_BUSAN_STAY_BOOKIN_PW || '',
+    },
     regions: {
       seoul: { origin, prefix: '/sw' },
       busan: { origin, prefix: '/busan/sw' },
+      // Busan 숙박예약(accommodation booking) — separate app under the same host, own login.
+      'busan-stay': { origin, prefix: '/booking' },
     },
   };
   return _cfg;
@@ -142,5 +153,5 @@ export function loadConfig() {
 // Secret strings to scrub from every log / output (see io.redact).
 export function secretValues() {
   const { creds } = loadConfig();
-  return [creds.id, creds.pw].filter(Boolean);
+  return [creds.id, creds.pw, creds.stayPw].filter(Boolean);
 }

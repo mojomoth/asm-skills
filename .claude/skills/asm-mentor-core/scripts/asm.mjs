@@ -127,6 +127,7 @@ const COMMAND_LIST = [
   'fund-list', 'fund-view', 'fund-comment',
   'room-availability', 'room-reserve', 'room-cancel',
   'member-info', 'screenshot',
+  'stay-login', 'stay-availability', 'stay-reserve', 'stay-cancel', 'stay-list', 'stay-profile',
 ];
 
 async function route(command, ctx) {
@@ -173,6 +174,12 @@ async function route(command, ctx) {
     case 'room-availability': return (await import('./lib/commands/room.mjs')).availability(ctx);
     case 'room-reserve': return (await import('./lib/commands/room.mjs')).reserve(ctx);
     case 'room-cancel': return (await import('./lib/commands/room.mjs')).cancel(ctx);
+    case 'stay-login': return (await import('./lib/commands/stay.mjs')).login(ctx);
+    case 'stay-availability': return (await import('./lib/commands/stay.mjs')).availability(ctx);
+    case 'stay-reserve': return (await import('./lib/commands/stay.mjs')).reserve(ctx);
+    case 'stay-cancel': return (await import('./lib/commands/stay.mjs')).cancel(ctx);
+    case 'stay-list': return (await import('./lib/commands/stay.mjs')).list(ctx);
+    case 'stay-profile': return (await import('./lib/commands/stay.mjs')).profile(ctx);
     default:
       throw new AsmError('VALIDATION', `unknown command: ${command}`, { hint: `known: ${COMMAND_LIST.join(', ')}` });
   }

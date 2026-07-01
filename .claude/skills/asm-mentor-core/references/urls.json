@@ -31,5 +31,12 @@
     "rentList": "/mypage/itemRent/list.do?menuNo=200059",
     "rentView": "/mypage/itemRent/view.do?menuNo=200059"
   },
-  "member": "/mypage/myInfo/forUpdateMy.do?menuNo=200036"
+  "member": "/mypage/myInfo/forUpdateMy.do?menuNo=200036",
+  "stay": {
+    "_comment": "부산 숙박예약(swmaestro.ai/booking). region=busan-stay (origin+prefix=/booking) 라 이 경로들이 곧 /booking/... 이 된다. 실제 값 미확인 — recon 후 확정 예정.",
+    "login": "/login",
+    "home": "/",
+    "reservations": "/reservations",
+    "profile": "/profile"
+  }
 }
