@@ -12,7 +12,7 @@ allowed-tools: Bash, Read
 메인 사이트(swmaestro.ai)와 별도 로그인·세션을 쓰는 부산센터 전용 앱(`/booking`)이다. 코어 CLI에
 region `busan-stay` 로 접근한다:
 ```
-node .claude/skills/asm-mentor-core/scripts/asm.mjs <cmd> --region busan-stay [옵션]
+node "${CLAUDE_PLUGIN_ROOT}/skills/asm-mentor-core/scripts/asm.mjs" <cmd> --region busan-stay [옵션]
 ```
 JSON 출력/에러 코드 규칙은 `asm-mentor-core` SKILL 참조. **다른 seoul/busan 명령과 세션이 완전히
 분리**되어 있으므로 항상 `--region busan-stay` 를 붙인다.

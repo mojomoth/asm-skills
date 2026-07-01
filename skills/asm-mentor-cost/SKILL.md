@@ -40,6 +40,8 @@ asm cost --month 2026-06 --recompute             # 보고서 진행시간으로 
 - `asm-mentor-core/references/travel-allowance.json` — `homeBase`(기준역), `perNightLodging`(80,000),
   `perDayMeals`(50,000), `fareByOrigin`(기준역별 왕복 운임). 출장지/단가가 바뀌면 이 파일만 수정.
 - 파일이 없으면 기본값(시간당 200,000원·1~3시간)으로 동작하고 부산 출장수당은 0 처리하며 `warnings`로 알린다.
+- 플러그인으로 설치한 경우 이 파일들은 플러그인 캐시 안에 있어 업데이트 시 덮어써질 수 있다 — 단가를
+  영구적으로 바꾸고 싶다면 로컬 클론(개발자용 설치)을 사용하는 것을 권장한다.
 
 ## 출력(JSON `data`)
 - `sessions[]` 세션별 분해(지역/날짜/시간/장소/온오프/인정시간/지급액)
